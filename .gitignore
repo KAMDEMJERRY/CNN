@@ -1,0 +1,12 @@
+# Ignore executables
+*.exe
+*.out
+*.app
+*.bin
+*.dll
+*.so
+*.dylib
+*.class
+*.txt
+
+test.cpp
