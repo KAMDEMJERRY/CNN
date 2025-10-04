@@ -1,3 +1,3 @@
 clear
 make
-./MLP
+# ./build/Convolution
