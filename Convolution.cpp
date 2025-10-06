@@ -3,7 +3,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include <stdexcept>
-
+#include "./imgdataset.cpp"
 using namespace Eigen;
 using namespace std;
 
@@ -179,6 +179,7 @@ int main() {
                 input_maps[0](i, j) = img[i][j];
             }
         }
+        ImageDataset imgDataset  = loadDataSet();
 
         cout << "Input map:\n" << input_maps[0] << "\n\n";
 

@@ -10,6 +10,5 @@
 *.txt
 
 test.cpp
-.vscode/
 build/*
-*.pdfgi
+*.pdf
