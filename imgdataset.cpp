@@ -9,7 +9,9 @@ ImageDataset::ImageDataset(
     vector<String> classes,
     vector<MatrixXd> images,
     vector<String> labels
-): classes(classes), images(images), labels(labels){}
+): classes(classes), images(images), labels(labels){
+    ordinalEncoding(classes, labels);
+}
 
 vector<int> ImageDataset::ordinalEncoding(vector<string>& classes, vector<string>& data_labels){
     encoded_labels.clear();

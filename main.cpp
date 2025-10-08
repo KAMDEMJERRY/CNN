@@ -1,12 +1,19 @@
 #include "convolution.hpp"
 #include "dense.hpp"
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
+using namespace Eigen;
 
 int main() {
     try {
         // Charger le dataset d'images
         cout << "=== CHARGEMENT DU DATASET ===" << endl;
         ImageDataset imgDataset = loadDataSet();
-        
+        int n_images = imgDataset.images.size();
+        vector<int> Y = imgDataset.getY_encoded();
+
         // Vérifier que des images ont été chargées
         if (imgDataset.images.empty()) {
             throw std::runtime_error("Aucune image chargée dans le dataset");
@@ -27,10 +34,6 @@ int main() {
         cout << "Première image (extrait 10x10):\n" << first_image.block(0, 0, 10, 10) << "\n\n";
         cout << "Label de la première image: " << imgDataset.labels[0] << "\n\n";
 
-        // Préparer l'input pour la convolution (convertir en vector<MatrixXd>)
-        std::vector<MatrixXd> input_maps;
-        input_maps.push_back(first_image);
-        
         int image_size = first_image.rows(); // Les images sont carrées (128x128)
         int input_channels = 1; // Images en niveaux de gris
 
@@ -57,29 +60,134 @@ int main() {
         PoolLayer pool2(conv2.output_size, conv2.output_ch, 2); // Pooling 2x2
         cout << "Pool2 - Taille de sortie: " << pool2.output_size << "x" << pool2.output_size << endl;
 
-
-        // === TRAITEMENT DE PLUSIEURS IMAGES ===
-        cout << "\n=== TRAITEMENT DE PLUSIEURS IMAGES ===" << endl;
-        int num_test_images = min(5, (int)imgDataset.images.size()); // Tester sur 5 images max
+        // Calcul de la taille après aplatissement
+        int flattened_size = pool2.output_size * pool2.output_size * pool2.input_ch;
+        cout << "Taille après aplatissement: " << flattened_size << endl;
         
-        for (int img_idx = 0; img_idx < num_test_images; ++img_idx) {
-            cout << "\n--- Image " << img_idx + 1 << " ---" << endl;
-            cout << "Label: " << imgDataset.labels[img_idx] << endl;
+        // Préparer la matrice d'entrée pour les couches denses
+        MatrixXd X(n_images, flattened_size);
+
+        // Initialiser les couches denses
+        DenseLayer dense1(flattened_size, 64);  // Augmenté la taille pour plus de capacité
+        cout << "Dense1 - Input: " << flattened_size << ", Output: " << 64 << ", Paramètres: " 
+            << (flattened_size * 64 + 64) << " (weights: " << (flattened_size * 64) 
+            << ", biases: " << 64 << ")" << endl;
+
+        Activation_ReLU activation1;
+        cout << "Activation1 - ReLU" << endl;
+
+        DenseLayer dense2(64, 32);              // Couche intermédiaire
+        cout << "Dense2 - Input: " << 64 << ", Output: " << 32 << ", Paramètres: " 
+            << (64 * 32 + 32) << " (weights: " << (64 * 32) 
+            << ", biases: " << 32 << ")" << endl;
+
+        Activation_ReLU activation2;
+        cout << "Activation2 - ReLU" << endl;
+
+        DenseLayer dense3(32, imgDataset.classes.size());  // Sortie = nombre de classes
+        cout << "Dense3 - Input: " << 32 << ", Output: " << imgDataset.classes.size() 
+            << ", Paramètres: " << (32 * imgDataset.classes.size() + imgDataset.classes.size()) 
+            << " (weights: " << (32 * imgDataset.classes.size()) 
+            << ", biases: " << imgDataset.classes.size() << ")" << endl;
+
+        Activation_Softmax activation3;
+        cout << "Activation3 - Softmax" << endl;
+
+        // Calcul du total des paramètres
+        int total_params = (flattened_size * 64 + 64) + (64 * 32 + 32) + (32 * imgDataset.classes.size() + imgDataset.classes.size());
+        cout << "Total des paramètres des couches denses: " << total_params << endl;
+        cout << "Taille de l'input dense: " << n_images << " x " << flattened_size << endl;
+               
+        
+
+
+
+
+
+
+
+        // === CONVOLUTION SUR TOUTES LES IMAGES ===
+        cout << "\n=== PHASE DE CONVOLUTION ===" << endl;
+        
+        for (int img_idx = 0; img_idx < n_images; ++img_idx) {
+            if (img_idx % 100 == 0) {
+                cout << "Traitement de l'image " << img_idx + 1 << "/" << n_images << endl;
+            }
             
             // Préparer l'input
             std::vector<MatrixXd> current_input;
             current_input.push_back(imgDataset.images[img_idx]);
             
-            // Forward pass
+            // Forward pass through convolutional layers
             conv1.forward(current_input);
             pool1.forward(conv1.output_maps);
             conv2.forward(pool1.output_maps);
             pool2.forward(conv2.output_maps);
-            pool2.flatten();
             
-            cout << "Nombre de caractéristiques extraites: " << pool2.flats_output.size() << endl;
-            cout << "Valeur moyenne des caractéristiques: " << pool2.flats_output.mean() << endl;
+            // Aplatir la sortie et la stocker dans X
+            pool2.flatten();
+            X.row(img_idx) = pool2.flats_output;
         }
+
+        cout << "Matrice X créée: " << X.rows() << " x " << X.cols() << endl;
+
+        // === CLASSIFICATION ===
+        cout << "\n=== PHASE DE CLASSIFICATION ===" << endl;
+        
+
+        // Forward pass through dense layers
+        cout << "Forward pass through dense layers..." << endl;
+        dense1.forward(X);
+        activation1.forward(dense1.output);
+        dense2.forward(activation1.output);
+        activation2.forward(dense2.output);
+        dense3.forward(activation2.output);
+        activation3.forward(dense3.output);
+
+        // Afficher les prédictions pour les premières images
+        // cout << "\n=== PRÉDICTIONS (5 premières images) ===" << endl;
+        int num_display = min(5, n_images);
+        for (int i = 0; i < num_display; ++i) {
+            cout << "Image " << i + 1 << " - Label réel: " << imgDataset.labels[i] << " (" << Y[i] << ")" << endl;
+            cout << "Probabilités: [";
+            for (int j = 0; j < activation3.output.cols(); ++j) {
+                cout << activation3.output(i, j);
+                if (j < activation3.output.cols() - 1) cout << ", ";
+            }
+            cout << "]" << endl;
+            
+            // Trouver la classe prédite
+            int predicted_class = 0;
+            double max_prob = activation3.output(i, 0);
+            for (int j = 1; j < activation3.output.cols(); ++j) {
+                if (activation3.output(i, j) > max_prob) {
+                    max_prob = activation3.output(i, j);
+                    predicted_class = j;
+                }
+            }
+            cout << "Classe prédite: " << predicted_class << " (prob: " << max_prob << ")" << endl << endl;
+        }
+
+        // Calcul de la précision
+        int correct_predictions = 0;
+        for (int i = 0; i < n_images; ++i) {
+            int predicted_class = 0;
+            double max_prob = activation3.output(i, 0);
+            for (int j = 1; j < activation3.output.cols(); ++j) {
+                if (activation3.output(i, j) > max_prob) {
+                    max_prob = activation3.output(i, j);
+                    predicted_class = j;
+                }
+            }
+            if (predicted_class == Y[i]) {
+                correct_predictions++;
+            }
+        }
+        
+        double accuracy = static_cast<double>(correct_predictions) / n_images * 100.0;
+        cout << "=== RÉSULTATS ===" << endl;
+        cout << "Précision sur l'ensemble d'entraînement: " << accuracy << "% (" 
+             << correct_predictions << "/" << n_images << ")" << endl;
 
     } catch (const std::exception& e) {
         cerr << "ERREUR: " << e.what() << endl;
