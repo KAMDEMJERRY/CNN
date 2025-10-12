@@ -107,3 +107,40 @@ MatrixXd& Activation_Softmax::forward(const MatrixXd& inputs){
     output = result.matrix();
     return output;
 }
+
+// 1: y one hot encoded         2: Vector of categories
+VectorXd LossCategoricalCrossentropy::forward(MatrixXd &y_pred, MatrixXd& y){
+    int samples = y_pred.rows();
+
+    MatrixXd y_pred_clipped = y_pred.array().min(1e-7).max(1 - 1e-7).matrix();
+
+    RowVectorXd correct_confidences(samples);
+    correct_confidences = (y_pred.array() * y.array()).rowwise().sum();
+
+
+   RowVectorXd neg_log_likelihoods = (correct_confidences.array().log()) * -1;
+   return neg_log_likelihoods;
+}
+VectorXd LossCategoricalCrossentropy::forward(MatrixXd& y_pred, VectorXd& y){
+    int samples = y_pred.rows();
+
+    MatrixXd y_pred_clipped = y_pred.array().min(1e-7).max(1 - 1e-7).matrix();
+    
+    RowVectorXd correct_confidences(samples);
+    for(int i = 0; i < y.size(); i++){
+        correct_confidences(i) = y_pred.coeff(i, y(i));
+    }
+
+   RowVectorXd neg_log_likelihoods = (correct_confidences.array().log()) * -1;
+   return neg_log_likelihoods;
+}
+
+
+double LossCategoricalCrossentropy::calculate(MatrixXd& output, MatrixXd& y){
+    VectorXd sample_loss = forward(output, y);
+    return sample_loss.mean();
+}
+double LossCategoricalCrossentropy::calculate(MatrixXd& output, VectorXd& y){
+    VectorXd sample_loss = forward(output, y);
+    return sample_loss.mean();
+}

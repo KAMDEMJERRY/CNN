@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS = -g -I/usr/include/eigen3
 
 # Fichiers source et objets
-SRCS = main.cpp convolution.cpp imgdataset.cpp dense.cpp
+SRCS = main.cpp convolution.cpp imgdataset.cpp dense.cpp utils.cpp
 OBJS = $(addprefix ./build/, $(SRCS:.cpp=.o))
 TARGET = ./build/CNN.exe
 

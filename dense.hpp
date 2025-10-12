@@ -35,8 +35,17 @@ public:
     MatrixXd output;
     MatrixXd& forward(const MatrixXd& inputs);
 };
+
+class LossCategoricalCrossentropy{
+public:
+    VectorXd forward(MatrixXd& y_pred, MatrixXd& y) ;
+    VectorXd forward(MatrixXd& y_pred, VectorXd& y) ;
+    double calculate(MatrixXd &output, MatrixXd &y) ;
+    double calculate(MatrixXd &output, VectorXd &y) ;
+};
+
 extern MatrixXd generateSyntheticData(int samples, int features, unsigned seed);
- 
+
 extern void testActivation_ReLU();
 
 #endif // DENSE_HPP

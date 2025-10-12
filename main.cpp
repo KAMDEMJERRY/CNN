@@ -1,5 +1,6 @@
 #include "convolution.hpp"
 #include "dense.hpp"
+#include "utils.hpp"
 #include <iostream>
 #include <algorithm>
 
@@ -94,6 +95,10 @@ int main() {
         ImageDataset imgDataset = loadDataSet();
         int n_images = imgDataset.images.size();
         vector<int> Y = imgDataset.getY_encoded();
+        VectorXd y(Y.size());
+        for(int i = 0; i < Y.size(); i++) {
+            y(i) = static_cast<double>(Y[i]);
+        }
 
         // Vérifier que des images ont été chargées
         if (imgDataset.images.empty()) {
@@ -154,6 +159,8 @@ int main() {
         
         Activation_Softmax activation3;
 
+        LossCategoricalCrossentropy loss_function;
+
         // Calcul du total des paramètres
         int total_params = (flattened_size * 64 + 64) + (64 * 32 + 32) + (32 * imgDataset.classes.size() + imgDataset.classes.size());
         
@@ -200,28 +207,32 @@ int main() {
 
         // Afficher les prédictions pour les premières images
         // cout << "\n=== PRÉDICTIONS (5 premières images) ===" << endl;
-        int num_display = min(5, n_images);
-        for (int i = 0; i < num_display; ++i) {
-            cout << "Image " << i + 1 << " - Label réel: " << imgDataset.labels[i] << " (" << Y[i] << ")" << endl;
-            cout << "Probabilités: [";
-            for (int j = 0; j < activation3.output.cols(); ++j) {
-                cout << activation3.output(i, j);
-                if (j < activation3.output.cols() - 1) cout << ", ";
-            }
-            cout << "]" << endl;
+        // int num_display = min(5, n_images);
+        // for (int i = 0; i < num_display; ++i) {
+        //     cout << "Image " << i + 1 << " - Label réel: " << imgDataset.labels[i] << " (" << Y[i] << ")" << endl;
+        //     cout << "Probabilités: [";
+        //     for (int j = 0; j < activation3.output.cols(); ++j) {
+        //         cout << activation3.output(i, j);
+        //         if (j < activation3.output.cols() - 1) cout << ", ";
+        //     }
+        //     cout << "]" << endl;
             
-            // Trouver la classe prédite
-            int predicted_class = 0;
-            double max_prob = activation3.output(i, 0);
-            for (int j = 1; j < activation3.output.cols(); ++j) {
-                if (activation3.output(i, j) > max_prob) {
-                    max_prob = activation3.output(i, j);
-                    predicted_class = j;
-                }
-            }
-            cout << "Classe prédite: " << predicted_class << " (prob: " << max_prob << ")" << endl << endl;
-        }
+        //     // Trouver la classe prédite
+        //     int predicted_class = 0;
+        //     double max_prob = activation3.output(i, 0);
+        //     for (int j = 1; j < activation3.output.cols(); ++j) {
+        //         if (activation3.output(i, j) > max_prob) {
+        //             max_prob = activation3.output(i, j);
+        //             predicted_class = j;
+        //         }
+        //     }
+        //     cout << "Classe prédite: " << predicted_class << " (prob: " << max_prob << ")" << endl << endl;
+        // }
 
+
+        // Calcul de la perte
+        double loss = loss_function.calculate(activation3.output, y);
+        
         // Calcul de la précision
         int correct_predictions = 0;
         for (int i = 0; i < n_images; ++i) {
@@ -240,11 +251,8 @@ int main() {
         
         double accuracy = static_cast<double>(correct_predictions) / n_images * 100.0;
         cout << "=== RÉSULTATS ===" << endl;
-        cout << "Précision sur l'ensemble d'entraînement: " << accuracy << "% (" 
-             << correct_predictions << "/" << n_images << ")" << endl;
-
-
-
+        cout << "Calcul la loss sur l'ensemble d'entrainement: " << loss << endl;
+        cout << "Précision sur l'ensemble d'entraînement: " << accuracy << "% (" << correct_predictions << "/" << n_images << ")" << endl;
     
     } catch (const std::exception& e) {
         cerr << "ERREUR: " << e.what() << endl;
