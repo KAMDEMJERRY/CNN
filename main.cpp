@@ -3,93 +3,20 @@
 #include "utils.hpp"
 #include <iostream>
 #include <algorithm>
+#include "main.h"
+#include <utility>
 
 using namespace std;
 using namespace Eigen;
-void logCNNArchitecture(const ImageDataset& imgDataset, 
-                              const ConvLayer& conv1, const PoolLayer& pool1,
-                              const ConvLayer& conv2, const PoolLayer& pool2,
-                              int image_size, int input_channels, int n_images,
-                              const vector<int>& dense_architecture = {64, 32}) {
-    
-    cout << "\n=== ARCHITECTURE COMPLÈTE DU CNN ===" << endl;
-    cout << "======================================" << endl;
 
-    int flattened_size = pool2.output_size * pool2.output_size * pool2.input_ch;
-    
-    // Construction de l'architecture dense dynamiquement
-    vector<int> full_architecture;
-    full_architecture.push_back(flattened_size);
-    full_architecture.insert(full_architecture.end(), dense_architecture.begin(), dense_architecture.end());
-    full_architecture.push_back(imgDataset.classes.size());
 
-    // Partie convolutionnelle
-    cout << "\n--- PARTIE CONVOLUTIONNELLE ---" << endl;
-    cout << "Input: " << image_size << "x" << image_size << "x" << input_channels << endl;
-    
-    vector<pair<string, string>> conv_layers = {
-        {"Conv1", "(" + to_string(conv1.filter_size) + "x" + to_string(conv1.filter_size) + 
-                  ", filters=" + to_string(conv1.output_ch) + ")"},
-        {"Pool1", "(pool_size=" + to_string(pool1.pool_size) + ")"},
-        {"Conv2", "(" + to_string(conv2.filter_size) + "x" + to_string(conv2.filter_size) + 
-                  ", filters=" + to_string(conv2.output_ch) + ")"},
-        {"Pool2", "(pool_size=" + to_string(pool2.pool_size) + ")"}
-    };
-    
-    vector<tuple<int, int, int>> dimensions = {
-        {image_size, image_size, input_channels},
-        {conv1.output_size, conv1.output_size, conv1.output_ch},
-        {pool1.output_size, pool1.output_size, pool1.input_ch},
-        {conv2.output_size, conv2.output_size, conv2.output_ch},
-        {pool2.output_size, pool2.output_size, pool2.input_ch}
-    };
-    
-    for (size_t i = 0; i < conv_layers.size(); ++i) {
-        auto [h, w, c] = dimensions[i];
-        auto [name, info] = conv_layers[i];
-        auto [h_next, w_next, c_next] = dimensions[i+1];
-        
-        cout << (i == 0 ? "┌─ " : "├─ ") << name << ": " 
-             << h << "x" << w << "x" << c << " → " 
-             << h_next << "x" << w_next << "x" << c_next 
-             << " " << info << endl;
-    }
-    cout << "└─ Flatten: → " << flattened_size << " features" << endl;
 
-    // Partie dense
-    cout << "\n--- PARTIE DENSE ---" << endl;
-    int total_dense_params = 0;
-    for (size_t i = 0; i < full_architecture.size() - 1; ++i) {
-        int input_size = full_architecture[i];
-        int output_size = full_architecture[i+1];
-        int layer_params = input_size * output_size + output_size;
-        total_dense_params += layer_params;
-        
-        string layer_name = (i == full_architecture.size() - 2) ? "Output" : 
-                           "Dense" + to_string(i+1);
-        string activation = (i == full_architecture.size() - 2) ? "Softmax" : "ReLU";
-        
-        cout << (i == 0 ? "┌─ " : "├─ ") << layer_name << ": " 
-             << input_size << " → " << output_size
-             << " | params: " << layer_params 
-             << " → " << activation << endl;
-    }
-
-    // Résumé
-    cout << "\n--- RÉSUMÉ ---" << endl;
-    cout << "Architecture: ";
-    for (size_t i = 0; i < full_architecture.size(); ++i) {
-        cout << full_architecture[i];
-        if (i < full_architecture.size() - 1) cout << " → ";
-    }
-    cout << endl;
-    
-    cout << "Total paramètres: " << total_dense_params << " (dense only)" << endl;
-    cout << "Taille input: " << n_images << " images " << image_size << "x" << image_size << endl;
-    cout << "Taille output: " << n_images << " × " << imgDataset.classes.size() << " probabilités" << endl;
-}
 int main() {
     try {
+
+
+
+
         // Charger le dataset d'images
         cout << "=== CHARGEMENT DU DATASET ===" << endl;
         ImageDataset imgDataset = loadDataSet();
@@ -125,6 +52,25 @@ int main() {
 
 
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // Création de l'architecture CNN
         cout << "=== CONFIGURATION DU CNN ===" << endl;
       
@@ -157,19 +103,37 @@ int main() {
 
         DenseLayer dense3(32, imgDataset.classes.size());  // Sortie = nombre de classes
         
-        Activation_Softmax activation3;
+        // Activation_Softmax activation3;
 
-        LossCategoricalCrossentropy loss_function;
+        // LossCategoricalCrossentropy loss_function;
+        Activation_Softmax_Loss_CategoricalCrossentropy loss_activation;
 
-        // Calcul du total des paramètres
-        int total_params = (flattened_size * 64 + 64) + (64 * 32 + 32) + (32 * imgDataset.classes.size() + imgDataset.classes.size());
-        
-
+        // Log de l'architecture;
         logCNNArchitecture(imgDataset, conv1, pool1, conv2, pool2, image_size, input_channels, n_images);
+
+        Optimizer_SGD optimizer(0.5);
+
+
+
+     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         // === CONVOLUTION SUR TOUTES LES IMAGES ===
         cout << "\n=== PHASE DE CONVOLUTION ===" << endl;
-        
+
         for (int img_idx = 0; img_idx < n_images; ++img_idx) {
             if (img_idx % 100 == 0) {
                 cout << "Traitement de l'image " << img_idx + 1 << "/" << n_images << endl;
@@ -189,70 +153,74 @@ int main() {
             pool2.flatten();
             X.row(img_idx) = pool2.flats_output;
         }
-
         cout << "Matrice X créée: " << X.rows() << " x " << X.cols() << endl;
+
+
+
+
+
 
         // === CLASSIFICATION ===
         cout << "\n=== PHASE DE CLASSIFICATION ===" << endl;
-        
 
-        // Forward pass through dense layers
-        cout << "Forward pass through dense layers..." << endl;
-        dense1.forward(X);
-        activation1.forward(dense1.output);
-        dense2.forward(activation1.output);
-        activation2.forward(dense2.output);
-        dense3.forward(activation2.output);
-        activation3.forward(dense3.output);
+        for(int i = 0; i < 1; i++){
 
-        // Afficher les prédictions pour les premières images
-        // cout << "\n=== PRÉDICTIONS (5 premières images) ===" << endl;
-        // int num_display = min(5, n_images);
-        // for (int i = 0; i < num_display; ++i) {
-        //     cout << "Image " << i + 1 << " - Label réel: " << imgDataset.labels[i] << " (" << Y[i] << ")" << endl;
-        //     cout << "Probabilités: [";
-        //     for (int j = 0; j < activation3.output.cols(); ++j) {
-        //         cout << activation3.output(i, j);
-        //         if (j < activation3.output.cols() - 1) cout << ", ";
-        //     }
-        //     cout << "]" << endl;
-            
-        //     // Trouver la classe prédite
-        //     int predicted_class = 0;
-        //     double max_prob = activation3.output(i, 0);
-        //     for (int j = 1; j < activation3.output.cols(); ++j) {
-        //         if (activation3.output(i, j) > max_prob) {
-        //             max_prob = activation3.output(i, j);
-        //             predicted_class = j;
-        //         }
-        //     }
-        //     cout << "Classe prédite: " << predicted_class << " (prob: " << max_prob << ")" << endl << endl;
-        // }
+            dense1.weights = 0.05 * MatrixXd::Random(dense1.n_inputs, dense1.n_neurons).array();
+            dense1.biases = 0.05 *  RowVectorXd::Random(dense1.n_neurons).array();
+            dense2.weights = 0.05 * MatrixXd::Random(dense2.n_inputs, dense2.n_neurons).array();
+            dense2.biases = 0.05 *  RowVectorXd::Random(dense2.n_neurons).array();
+            dense3.weights = 0.05 * MatrixXd::Random(dense3.n_inputs, dense3.n_neurons).array();
+            dense3.biases = 0.05 *  RowVectorXd::Random(dense3.n_neurons).array();
+    
+            dense1.forward(X);
+            activation1.forward(dense1.output);
+            dense2.forward(activation1.output);
+            activation2.forward(dense2.output);
+            dense3.forward(activation2.output);
+            double loss = loss_activation.forward(static_cast<const MatrixXd&>(dense3.output), 
+                                     static_cast<const VectorXd&>(y));
 
 
-        // Calcul de la perte
-        double loss = loss_function.calculate(activation3.output, y);
-        
-        // Calcul de la précision
-        int correct_predictions = 0;
-        for (int i = 0; i < n_images; ++i) {
-            int predicted_class = 0;
-            double max_prob = activation3.output(i, 0);
-            for (int j = 1; j < activation3.output.cols(); ++j) {
-                if (activation3.output(i, j) > max_prob) {
-                    max_prob = activation3.output(i, j);
-                    predicted_class = j;
+            // Calcul de la précision
+            int correct_predictions = 0;
+            for (int i = 0; i < n_images; ++i) {
+                int predicted_class = 0;
+                double max_prob = loss_activation.output(i, 0);
+                for (int j = 1; j < loss_activation.output.cols(); ++j) {
+                    if (loss_activation.output(i, j) > max_prob) {
+                        max_prob = loss_activation.output(i, j);
+                        predicted_class = j;
+                    }
+                }
+                if (predicted_class == Y[i]) {
+                    correct_predictions++;
                 }
             }
-            if (predicted_class == Y[i]) {
-                correct_predictions++;
-            }
+            double accuracy = static_cast<double>(correct_predictions) / n_images * 100.0;
+            
+            cout << "=== RÉSULTATS ===" << endl;
+            cout << "mise a jour iteration: " << i;
+            cout << "  loss : " << loss;
+            cout << "  acc: " << accuracy << "% (" << correct_predictions << "/" << n_images << ")" << endl;
+            
+            std::cout << "Backward Pass" << std::endl;
+            loss_activation.backward(loss_activation.output, y);
+            std::cout << "Dense 3 Backward Pass" << std::endl;
+            dense3.backward(loss_activation.dinputs);
+            activation2.backward(dense3.dinputs);
+            std::cout << "Dense 2 Backward Pass" << std::endl;
+            dense2.backward(activation2.dinputs);
+            std::cout << "Dense 1 Backward Pass" << std::endl;
+            activation1.backward(dense2.dinputs);
+            dense1.backward(activation1.dinputs);
+
+            std::cout << "Updating params" << std::endl;
+            optimizer.update_params(dense1);
+            optimizer.update_params(dense2);
+            optimizer.update_params(dense3);
+            
+            std::cout << "Updated params" << std::endl;
         }
-        
-        double accuracy = static_cast<double>(correct_predictions) / n_images * 100.0;
-        cout << "=== RÉSULTATS ===" << endl;
-        cout << "Calcul la loss sur l'ensemble d'entrainement: " << loss << endl;
-        cout << "Précision sur l'ensemble d'entraînement: " << accuracy << "% (" << correct_predictions << "/" << n_images << ")" << endl;
     
     } catch (const std::exception& e) {
         cerr << "ERREUR: " << e.what() << endl;

@@ -9,6 +9,9 @@ ConvLayer::ConvLayer(int in_size, int in_ch, int f_num, int f_size, int pad, int
     initialize(); 
 }
 
+
+
+
 void ConvLayer::initialize() {
     filters.resize(output_ch, std::vector<MatrixXd>(input_ch));
     for(int oc = 0; oc < output_ch; ++oc) {
@@ -25,6 +28,7 @@ void ConvLayer::forward(const std::vector<MatrixXd>& input_maps) {
     }
 
     try {
+        
         for(int oc = 0; oc < output_ch; ++oc) {
             output_maps[oc].setZero();
         }

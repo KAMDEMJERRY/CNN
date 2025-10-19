@@ -32,6 +32,7 @@ public:
     // Méthodes
     void initialize();
     void forward(const std::vector<MatrixXd>& input_maps);
+    void forward(const std::vector<std::vector<MatrixXd>>& batch_input_maps);
 };
 
 // Déclaration de la classe PoolLayer
