@@ -52,7 +52,8 @@ DenseLayer::DenseLayer(int n_inputs, int n_neurons)
 {
     DenseLayer::n_inputs = n_inputs;
     DenseLayer::n_neurons = n_neurons;
-    weights = MatrixXd::Random(n_inputs,n_neurons);
+    double scale = sqrt(2.0 / n_inputs);
+    weights = MatrixXd::Random(n_inputs,n_neurons) * scale;
     biases = MatrixXd::Zero(1, n_neurons);
     dweights = MatrixXd::Zero(n_inputs, n_neurons);
     dbiases = MatrixXd::Zero(1, n_neurons);
@@ -74,12 +75,12 @@ void DenseLayer::backward(const MatrixXd& dvalues){
         // inputs: (batch_size, n_inputs) -> transpose: (n_inputs, batch_size)
         // dvalues: (batch_size, n_neurons)
         // dweights: (n_inputs, n_neurons)
-        DenseLayer::dweights = DenseLayer::inputs.transpose() * dvalues;
+        this->dweights = DenseLayer::inputs.transpose() * dvalues;
         
         // 2. Gradients des biais: sum sur le batch (garder forme ligne)
         // dvalues: (batch_size, n_neurons)
         // dbiases: (1, n_neurons)
-        DenseLayer::dbiases = dvalues.colwise().sum(); // Somme sur les colonnes
+        this->dbiases = dvalues.colwise().sum(); // Somme sur les colonnes
         
         // 3. Gradients des inputs: dvalues * weights^T
         // dvalues: (batch_size, n_neurons)
@@ -97,7 +98,7 @@ void DenseLayer::backward(const MatrixXd& dvalues){
 const MatrixXd& DenseLayer::getOutput(){ return output; }
 
 MatrixXd& Activation_ReLU::forward(const MatrixXd& inputs){
-    output = inputs.array().max(0);
+    output = inputs.array().max(0.001 * inputs.array());
     return output;
 }
 MatrixXd& Activation_ReLU::backward(const MatrixXd& dvalues){
@@ -298,13 +299,15 @@ MatrixXd& Activation_Softmax_Loss_CategoricalCrossentropy::backward(const Matrix
 
 
 Optimizer_SGD::Optimizer_SGD(double learning_rate){
-    learning_rate = learning_rate;
+    this->learning_rate = learning_rate;
 }
 
-void Optimizer_SGD::update_params(DenseLayer layer){
+void Optimizer_SGD::update_params(DenseLayer& layer){
     try{
+        // std::cout << layer.weights << std::end;
         layer.weights = layer.weights.array() - learning_rate * layer.dweights.array();
         layer.biases = layer.biases.array() - learning_rate * layer.dbiases.array();
+        // std::cout << layer.weights << std::end;
     }catch(const std::exception& e){
         std::cout << e.what() << " :: Optimizer SGD exception " << std::endl;
         throw (e);

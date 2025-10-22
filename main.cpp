@@ -111,7 +111,7 @@ int main() {
         // Log de l'architecture;
         logCNNArchitecture(imgDataset, conv1, pool1, conv2, pool2, image_size, input_channels, n_images);
 
-        Optimizer_SGD optimizer(0.5);
+        Optimizer_SGD optimizer(.01);
 
 
 
@@ -134,26 +134,19 @@ int main() {
         // === CONVOLUTION SUR TOUTES LES IMAGES ===
         cout << "\n=== PHASE DE CONVOLUTION ===" << endl;
 
+        std::vector<std::vector<MatrixXd>> inputs(n_images);
         for (int img_idx = 0; img_idx < n_images; ++img_idx) {
-            if (img_idx % 100 == 0) {
-                cout << "Traitement de l'image " << img_idx + 1 << "/" << n_images << endl;
-            }
-            
-            // Préparer l'input
-            std::vector<MatrixXd> current_input;
-            current_input.push_back(imgDataset.images[img_idx]);
-            
-            // Forward pass through convolutional layers
-            conv1.forward(current_input);
-            pool1.forward(conv1.output_maps);
-            conv2.forward(pool1.output_maps);
-            pool2.forward(conv2.output_maps);
-            
-            // Aplatir la sortie et la stocker dans X
-            pool2.flatten();
-            X.row(img_idx) = pool2.flats_output;
-        }
-        cout << "Matrice X créée: " << X.rows() << " x " << X.cols() << endl;
+            inputs[img_idx].push_back(imgDataset.images[img_idx]);
+        }    
+        // Forward pass through convolutional layers
+        conv1.forward(inputs);
+        pool1.forward(conv1.output_maps);
+        conv2.forward(pool1.output_maps);
+        pool2.forward(conv2.output_maps);                
+        X = pool2.flatten();
+        
+        
+        
 
 
 
@@ -163,14 +156,7 @@ int main() {
         // === CLASSIFICATION ===
         cout << "\n=== PHASE DE CLASSIFICATION ===" << endl;
 
-        for(int i = 0; i < 1; i++){
-
-            dense1.weights = 0.05 * MatrixXd::Random(dense1.n_inputs, dense1.n_neurons).array();
-            dense1.biases = 0.05 *  RowVectorXd::Random(dense1.n_neurons).array();
-            dense2.weights = 0.05 * MatrixXd::Random(dense2.n_inputs, dense2.n_neurons).array();
-            dense2.biases = 0.05 *  RowVectorXd::Random(dense2.n_neurons).array();
-            dense3.weights = 0.05 * MatrixXd::Random(dense3.n_inputs, dense3.n_neurons).array();
-            dense3.biases = 0.05 *  RowVectorXd::Random(dense3.n_neurons).array();
+        for(int i_ = 0; i_ < 100; i_++){
     
             dense1.forward(X);
             activation1.forward(dense1.output);
@@ -199,27 +185,24 @@ int main() {
             double accuracy = static_cast<double>(correct_predictions) / n_images * 100.0;
             
             cout << "=== RÉSULTATS ===" << endl;
-            cout << "mise a jour iteration: " << i;
+            cout << "mise a jour iteration: " << i_;
             cout << "  loss : " << loss;
             cout << "  acc: " << accuracy << "% (" << correct_predictions << "/" << n_images << ")" << endl;
             
-            std::cout << "Backward Pass" << std::endl;
             loss_activation.backward(loss_activation.output, y);
-            std::cout << "Dense 3 Backward Pass" << std::endl;
             dense3.backward(loss_activation.dinputs);
             activation2.backward(dense3.dinputs);
-            std::cout << "Dense 2 Backward Pass" << std::endl;
+            
             dense2.backward(activation2.dinputs);
-            std::cout << "Dense 1 Backward Pass" << std::endl;
+
+
             activation1.backward(dense2.dinputs);
             dense1.backward(activation1.dinputs);
 
-            std::cout << "Updating params" << std::endl;
             optimizer.update_params(dense1);
             optimizer.update_params(dense2);
             optimizer.update_params(dense3);
             
-            std::cout << "Updated params" << std::endl;
         }
     
     } catch (const std::exception& e) {

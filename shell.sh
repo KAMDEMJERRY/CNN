@@ -1,3 +1,3 @@
 clear
 make
-# ./build/Convolution
+# ./build/CNN.exe

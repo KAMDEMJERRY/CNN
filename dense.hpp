@@ -74,7 +74,7 @@ class Optimizer_SGD{
 public:
     double learning_rate;
     Optimizer_SGD(double learning_rate=1.0);
-    void update_params(DenseLayer layer);
+    void update_params(DenseLayer& layer);
 };
 extern MatrixXd generateSyntheticData(int samples, int features, unsigned seed);
 

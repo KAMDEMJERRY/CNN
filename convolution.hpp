@@ -24,14 +24,13 @@ public:
    
     std::vector<std::vector<MatrixXd>> filters;
     VectorXd biases;
-    std::vector<MatrixXd> output_maps;
+    std::vector<std::vector<MatrixXd>> output_maps;
 
     // Constructeur
     ConvLayer(int in_size, int in_ch, int f_num, int f_size, int pad = 1, int str = 1);
 
     // Méthodes
     void initialize();
-    void forward(const std::vector<MatrixXd>& input_maps);
     void forward(const std::vector<std::vector<MatrixXd>>& batch_input_maps);
 };
 
@@ -43,16 +42,20 @@ public:
     int pool_size;
     int output_size;
 
-    std::vector<MatrixXd> input_maps;
-    std::vector<MatrixXd> output_maps; 
-    VectorXd flats_output;
-   
+    std::vector<std::vector<MatrixXd>> input_maps;
+    std::vector<std::vector<MatrixXd>> output_maps;
+    std::vector<std::vector<MatrixXd>> dvalue;
+
+    MatrixXd flats_output;
+    
+    
     // Constructeur
     PoolLayer(int in_size, int in_ch, int p_size);
 
     // Méthodes
-    void forward(const std::vector<MatrixXd>& in_maps);
-    void flatten();
+    void forward(const std::vector<std::vector<MatrixXd>>& batch_in_maps);
+    vector<vector<MatrixXd>> &unflatten(MatrixXd &flats);
+    MatrixXd &flatten();
 };
 
 
