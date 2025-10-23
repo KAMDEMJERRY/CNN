@@ -3,7 +3,6 @@
 #include "utils.hpp"
 #include <iostream>
 #include <algorithm>
-#include "main.h"
 #include <utility>
 
 using namespace std;
@@ -111,7 +110,7 @@ int main() {
         // Log de l'architecture;
         logCNNArchitecture(imgDataset, conv1, pool1, conv2, pool2, image_size, input_channels, n_images);
 
-        Optimizer_SGD optimizer(.01);
+        Optimizer_SGD optimizer(.000001);
 
 
 
@@ -126,24 +125,18 @@ int main() {
 
 
 
-
+        std::vector<std::vector<MatrixXd>> inputs(n_images);
+        for (int img_idx = 0; img_idx < n_images; ++img_idx) {
+            inputs[img_idx].push_back(imgDataset.images[img_idx]);
+        }    
+       
 
 
 
 
         // === CONVOLUTION SUR TOUTES LES IMAGES ===
-        cout << "\n=== PHASE DE CONVOLUTION ===" << endl;
+        // cout << "\n=== PHASE DE CONVOLUTION ===" << endl;
 
-        std::vector<std::vector<MatrixXd>> inputs(n_images);
-        for (int img_idx = 0; img_idx < n_images; ++img_idx) {
-            inputs[img_idx].push_back(imgDataset.images[img_idx]);
-        }    
-        // Forward pass through convolutional layers
-        conv1.forward(inputs);
-        pool1.forward(conv1.output_maps);
-        conv2.forward(pool1.output_maps);
-        pool2.forward(conv2.output_maps);                
-        X = pool2.flatten();
         
         
         
@@ -154,10 +147,19 @@ int main() {
 
 
         // === CLASSIFICATION ===
-        cout << "\n=== PHASE DE CLASSIFICATION ===" << endl;
 
         for(int i_ = 0; i_ < 100; i_++){
     
+
+            // cout << "\n=== PHASE DE CONVOLUTION ===" << endl;
+            // Forward pass through convolutional layers
+            conv1.forward(inputs);
+            pool1.forward(conv1.output_maps);
+            conv2.forward(pool1.output_maps);
+            pool2.forward(conv2.output_maps);                
+            X = pool2.flatten();
+        
+            // cout << "\n=== PHASE DE CLASSIFICATION ===" << endl;
             dense1.forward(X);
             activation1.forward(dense1.output);
             dense2.forward(activation1.output);
@@ -198,10 +200,17 @@ int main() {
 
             activation1.backward(dense2.dinputs);
             dense1.backward(activation1.dinputs);
+            pool2.backward(pool2.unflatten(dense1.dinputs));
+            conv2.backward(pool2.dinput);
+            pool1.backward(conv2.dinputs);
+            conv1.backward(pool1.dinput);
 
             optimizer.update_params(dense1);
             optimizer.update_params(dense2);
             optimizer.update_params(dense3);
+            optimizer.update_params(conv1);
+            optimizer.update_params(conv2);
+
             
         }
     

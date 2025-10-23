@@ -26,12 +26,19 @@ public:
     VectorXd biases;
     std::vector<std::vector<MatrixXd>> output_maps;
 
+    std::vector<std::vector<MatrixXd>> inputs;
+    std::vector<std::vector<MatrixXd>> dinputs;
+    std::vector<std::vector<MatrixXd>> dweights;
+    VectorXd dbiases;
+
     // Constructeur
     ConvLayer(int in_size, int in_ch, int f_num, int f_size, int pad = 1, int str = 1);
 
     // Méthodes
     void initialize();
     void forward(const std::vector<std::vector<MatrixXd>>& batch_input_maps);
+    std::vector<std::vector<MatrixXd>> &backward(const std::vector<std::vector<MatrixXd>> &dvalue);
+    MatrixXd full_conv(const MatrixXd &input, const MatrixXd &kernel, int padding = 0);
 };
 
 // Déclaration de la classe PoolLayer
@@ -45,6 +52,7 @@ public:
     std::vector<std::vector<MatrixXd>> input_maps;
     std::vector<std::vector<MatrixXd>> output_maps;
     std::vector<std::vector<MatrixXd>> dvalue;
+    std::vector<std::vector<MatrixXd>> dinput;
 
     MatrixXd flats_output;
     
@@ -56,7 +64,12 @@ public:
     void forward(const std::vector<std::vector<MatrixXd>>& batch_in_maps);
     vector<vector<MatrixXd>> &unflatten(MatrixXd &flats);
     MatrixXd &flatten();
+    vector<vector<MatrixXd>> &backward(std::vector<std::vector<MatrixXd>>& dvalue);
 };
 
+MatrixXd conv_for_dweights(const MatrixXd &input, const MatrixXd &dvalue, int filter_size, int stride);
+
+MatrixXd conv_transpose(const MatrixXd &kernel, const MatrixXd &dvalue, int output_size, int stride, int padding);
 
 #endif // CONVOLUTION_HPP
+

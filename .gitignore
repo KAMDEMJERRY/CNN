@@ -9,6 +9,5 @@
 *.class
 *.txt
 
-test.cpp
 build/*
 *.pdf

@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <random>
 #include "utils.hpp"
+#include "convolution.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -75,6 +76,7 @@ public:
     double learning_rate;
     Optimizer_SGD(double learning_rate=1.0);
     void update_params(DenseLayer& layer);
+    void update_params(ConvLayer &layer);
 };
 extern MatrixXd generateSyntheticData(int samples, int features, unsigned seed);
 

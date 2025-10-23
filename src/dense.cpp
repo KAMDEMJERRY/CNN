@@ -304,10 +304,26 @@ Optimizer_SGD::Optimizer_SGD(double learning_rate){
 
 void Optimizer_SGD::update_params(DenseLayer& layer){
     try{
-        // std::cout << layer.weights << std::end;
         layer.weights = layer.weights.array() - learning_rate * layer.dweights.array();
         layer.biases = layer.biases.array() - learning_rate * layer.dbiases.array();
-        // std::cout << layer.weights << std::end;
+    }catch(const std::exception& e){
+        std::cout << e.what() << " :: Optimizer SGD exception " << std::endl;
+        throw (e);
+    }
+
+}
+
+void Optimizer_SGD::update_params(ConvLayer& layer){
+    try{
+
+        for(int o_ch = 0; o_ch < layer.output_ch ; o_ch++){
+            for(int i_ch = 0; i_ch < layer.input_ch; i_ch++){
+                layer.filters[o_ch][i_ch] = layer.filters[o_ch][i_ch].array() - learning_rate * layer.dweights[o_ch][i_ch].array();
+            }
+        }
+        
+        layer.biases = layer.biases.array() - learning_rate * layer.dbiases.array();
+
     }catch(const std::exception& e){
         std::cout << e.what() << " :: Optimizer SGD exception " << std::endl;
         throw (e);

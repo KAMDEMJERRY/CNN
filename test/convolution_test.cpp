@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <Eigen/Dense>
-#include "../convolution.hpp"
+#include "convolution.hpp"
 
 using namespace Eigen;
 using namespace std;
@@ -232,7 +232,7 @@ TEST_F(ConvLayerTest, VariousConfigurations) {
 }
 
 // Point d'entrée pour les tests
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+// int main(int argc, char **argv) {
+//     ::testing::InitGoogleTest(&argc, argv);
+//     return RUN_ALL_TESTS();
+// }

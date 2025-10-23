@@ -97,7 +97,7 @@ double calculate_accuracy(const MatrixXd& predictions, const VectorXd& true_labe
     return static_cast<double>(correct) / n_samples * 100.0;
 }
 
-int main() {
+int test() {
     try {
         cout << "=== DÉMONSTRATION RÉSEAU DENSE SUR DONNÉES FICTIVES ===" << endl;
         
