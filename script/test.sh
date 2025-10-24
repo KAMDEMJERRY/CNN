@@ -1,11 +1,20 @@
+#!/bin/bash
+
+
 clear
 
 ## compile 
-make --build build
-# make --build build --clear-first
+cd ..
+# cmake --build build --clean-first
+cmake --build build
+ls
+cd build/test/
+
 
 # run unit test
 cd ../build/test/
+ctest --output-on-failure  # Affiche la sortie seulement si échec
+cd ../../script
 #.CNNtest
 
 # or with ctest

@@ -16,6 +16,9 @@ brew install gdb
 # Note: sur macOS,可能需要额外配置 https://sourceware.org/gdb/wiki/PermissionsDarwin
 ```
 
+### Clear the command line
+Ctrl + L / shell clear
+
 ## 1. Compiler avec les informations de débogage
 
 ### Avec CMake

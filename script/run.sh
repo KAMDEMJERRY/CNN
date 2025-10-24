@@ -1,13 +1,24 @@
+#!/bin/bash
+
 clear
 
 ## compile 
-make --build build
-# make --build build --clear-first
-#cd build
+cd ..
+cmake --build build
+# make --build build --clean-first
+
+
+echo "Execution du CNN ..."
+
+cd ./build/src/
+gdb ./CNN
+cd ../../script
+
 
 # execute CNN
 # ./src/CNN
 
+# cd ../script
 
 
 

@@ -1,7 +1,7 @@
 #include "imgdataset.hpp"
 
 // Définition des variables globales
-String BASE_DATA_PATH = "../dataset/bloodcellsub/images/TRAIN/";
+String BASE_DATA_PATH = "../../../dataset/bloodcellsub/images/TRAIN/";
 vector<String> class_path = {"EOSINOPHIL", "LYMPHOCYTE", "MONOCYTE", "NEUTROPHIL"};
 
 // Implémentation de ImageDataset

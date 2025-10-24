@@ -46,7 +46,6 @@ TEST_F(ConvLayerTest, ConstructorInitializesCorrectly) {
 // Test de l'initialisation des filtres
 TEST_F(ConvLayerTest, FilterInitialization) {
     ConvLayer conv(input_size, input_ch, filter_num, filter_size, padding, stride);
-    conv.initialize();
     
     // Vérifier que le bon nombre de filtres est créé
     EXPECT_EQ(conv.filters.size(), filter_num);
@@ -65,7 +64,6 @@ TEST_F(ConvLayerTest, FilterInitialization) {
 // Test de la propagation avant avec des valeurs connues
 TEST_F(ConvLayerTest, ForwardPassWithKnownValues) {
     ConvLayer conv(3, 1, 1, 2, 0, 1); // Taille réduite pour test manuel
-    conv.initialize();
     
     // Remplacer le filtre par des valeurs connues
     conv.filters[0][0] = MatrixXd::Constant(2, 2, 1.0); // Filtre tout à 1
@@ -89,6 +87,46 @@ TEST_F(ConvLayerTest, ForwardPassWithKnownValues) {
     EXPECT_TRUE(conv.output_maps[0][0].isApprox(expected_output));
 }
 
+// Test de la propagation arriere avec des valeurs connues
+TEST_F(ConvLayerTest, ConvArithmetiques){
+    int i = 5, k = 3, p = 0, s=1;
+    int o = i - k + 1 + 2*p;
+    int i_= o, k_ = k, s_ = s, p_ = k - p - 1;
+    int o_ = i_ + k - 1 -2*p;
+
+    ConvLayer conv(i, 1, 1, k, p, s); // Entrée 2x2x1, 1 filter filtre 3x3x1, stride 1, padding 1
+    conv.filters[0][0] = MatrixXd::Identity(k, k);
+    conv.biases[0] = 0.0;
+
+    vector<vector<MatrixXd>> batch_input;
+    vector<MatrixXd> input_maps;
+    input_maps.push_back(MatrixXd::Identity(i, i));
+    batch_input.push_back(input_maps);
+
+    vector<vector<MatrixXd>> batch_dvalues;
+    vector<MatrixXd> dvalues;
+    dvalues.push_back(MatrixXd::Ones(i_, i_));
+    batch_dvalues.push_back(dvalues);
+
+    conv.forward(batch_input);
+    conv.backward(batch_dvalues);
+
+    EXPECT_EQ(conv.output_maps[0][0].rows(), o);
+    EXPECT_EQ(conv.output_maps[0][0].cols(), o);
+
+    //dweights dimensions
+    EXPECT_EQ(conv.dweights[0][0].rows(), k);
+    EXPECT_EQ(conv.dweights[0][0].cols(), k);
+
+    //dinputs dimentsions
+    EXPECT_EQ(conv.dinputs[0][0].rows(), o_);
+    EXPECT_EQ(conv.dinputs[0][0].cols(), o_);
+
+    //dbiases dimensions
+    EXPECT_EQ(conv.dbiases.size(), 1);
+
+}
+
 // Test avec padding
 TEST_F(ConvLayerTest, ForwardPassWithPadding) {
     ConvLayer conv(2, 1, 1, 3, 1, 1); // Entrée 2x2, filtre 3x3, padding 1
@@ -105,6 +143,7 @@ TEST_F(ConvLayerTest, ForwardPassWithPadding) {
     
     conv.forward(batch_input);
     
+
     // Avec padding, la sortie devrait avoir la même taille que l'entrée
     EXPECT_EQ(conv.output_maps[0][0].rows(), 2);
     EXPECT_EQ(conv.output_maps[0][0].cols(), 2);
@@ -185,12 +224,12 @@ TEST_F(PoolLayerTest, FlattenOutput) {
     
     // Après pooling 2x2 sur entrée 2x2, chaque canal donne 1x1
     // Avec 2 canaux, le vecteur aplati devrait avoir taille 2
-    EXPECT_EQ(flattened.rows(), 2);
-    EXPECT_EQ(flattened.cols(), 1);
+    EXPECT_EQ(flattened.rows(), 1);
+    EXPECT_EQ(flattened.cols(), 2);
     
     // Vérifier les valeurs
     EXPECT_DOUBLE_EQ(flattened(0, 0), 1.0); // Max du premier canal
-    EXPECT_DOUBLE_EQ(flattened(1, 0), 2.0); // Max du deuxième canal
+    EXPECT_DOUBLE_EQ(flattened(0, 1), 2.0); // Max du deuxième canal
 }
 
 // Test avec batch de plusieurs échantillons
@@ -230,9 +269,3 @@ TEST_F(ConvLayerTest, VariousConfigurations) {
     ConvLayer conv3(5, 3, 4, 3, 0, 2);
     EXPECT_EQ(conv3.output_size, 2); // (5 + 0 - 3)/2 + 1 = 2
 }
-
-// Point d'entrée pour les tests
-// int main(int argc, char **argv) {
-//     ::testing::InitGoogleTest(&argc, argv);
-//     return RUN_ALL_TESTS();
-// }

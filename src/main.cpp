@@ -110,7 +110,7 @@ int main() {
         // Log de l'architecture;
         logCNNArchitecture(imgDataset, conv1, pool1, conv2, pool2, image_size, input_channels, n_images);
 
-        Optimizer_SGD optimizer(.000001);
+        Optimizer_SGD optimizer(.02);
 
 
 

@@ -6,7 +6,6 @@
 #include <vector>
 #include <Eigen/Dense>
 #include <stdexcept>
-#include "imgdataset.hpp"
 
 using namespace Eigen;
 using namespace std;

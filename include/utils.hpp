@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <random>
 #include "convolution.hpp"
+#include "imgdataset.hpp"
 
 using namespace std;
 using namespace Eigen;

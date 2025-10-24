@@ -22,7 +22,8 @@ void ConvLayer::initialize() {
 void ConvLayer::forward(const std::vector<std::vector<MatrixXd>>& batch_input_maps){
     inputs = batch_input_maps;
     int n_inputs = batch_input_maps.size();
-    
+    output_maps.clear();
+
     for(int batch_i = 0; batch_i < n_inputs; batch_i++){
         std::vector<MatrixXd> input_maps_i = batch_input_maps[batch_i];
         std::vector<MatrixXd> output_maps_i(output_ch);
@@ -67,37 +68,7 @@ void ConvLayer::forward(const std::vector<std::vector<MatrixXd>>& batch_input_ma
     }
 }
 
-// std::vector<std::vector<MatrixXd>>& ConvLayer::backward(const std::vector<std::vector<MatrixXd>>& dvalue){
-    
-//     std::vector<std::vector<MatrixXd>> dweights;
-//     for(int o_ch = 0; o_ch < output_ch; o_ch++){
-//         for(int i_ch = 0; i_ch < input_ch; i_ch){
-//             for(in_i = 0; in_i < n_in; in_i ++){
-//                 dweights[o_ch][i_ch] =  add(dweights[o_ch][i_ch], full_conv(dvalue[in_i][o_ch], inputs[in_i][i_ch]));
-//             }
-//         }
-//     }
 
-//     int n_in = dvalue.size();
-//     for(in_i = 0; in_i < n_in; in_i ++){
-//         vector<MatrixXd> dinputs_i(input_ch);
-//         for(int ch = 0; ch < intput_ch; ch++){
-//             dinputs_i[ch] = MatrixXd::Zero(input_size, input_size);
-//         }
-
-//         for(int i_ch = 0; i_ch < input_ch; i_ch++){
-//             for(int o_ch = 0; o_ch < output_ch; o_ch++){
-//                 dinputs_i[ch] = add(dinputs_i[i_ch] , full_conv(filters[o_ch][i_ch], dvalue[o_ch]));
-//             }
-//         }
-       
-//         dinputs.push_back(dinputs_i);
-//     }
-  
-
-
-    
-// }
 std::vector<std::vector<MatrixXd>>& ConvLayer::backward(const std::vector<std::vector<MatrixXd>>& dvalue) {
     int n_in = dvalue.size();
     dinputs.clear();
@@ -137,7 +108,7 @@ std::vector<std::vector<MatrixXd>>& ConvLayer::backward(const std::vector<std::v
             for(int in_i = 0; in_i < n_in; in_i++) {
                 // Pour dweights: convolution entre input et dvalue
                 MatrixXd grad_contrib = conv_for_dweights(inputs[in_i][i_ch], dvalue[in_i][o_ch], filter_size, stride);
-                dweights[o_ch][i_ch] += grad_contrib;
+                dweights[o_ch][i_ch] = dweights[o_ch][i_ch].array() +  grad_contrib.array();
             }
         }
     }
@@ -158,6 +129,18 @@ std::vector<std::vector<MatrixXd>>& ConvLayer::backward(const std::vector<std::v
             dinputs_i[i_ch] = MatrixXd::Zero(input_size, input_size);
         }
         
+
+        // Appliquer la dérivée de ReLU
+        for(int i_ch = 0; i_ch < input_ch; i_ch++) {
+            for(int i = 0; i < input_size; i++) {
+                for(int j = 0; j < input_size; j++) {
+                    if(inputs[in_i][i_ch](i, j) <= 0) {
+                        dinputs_i[i_ch](i, j) = 0;
+                    }
+                }
+            }
+        }
+
         for(int i_ch = 0; i_ch < input_ch; i_ch++) {
             for(int o_ch = 0; o_ch < output_ch; o_ch++) {
                 // Rotation du filtre de 180 degrés
@@ -169,21 +152,12 @@ std::vector<std::vector<MatrixXd>>& ConvLayer::backward(const std::vector<std::v
                 }
                 
                 // CONVOLUTION TRANSPOSÉE pour dinputs
-                MatrixXd grad_contrib = conv_transpose(rotated_filter, dvalue[in_i][o_ch], input_size, stride, padding);
-                dinputs_i[i_ch] += grad_contrib;
+                MatrixXd grad_contrib = conv_transpose(rotated_filter, dvalue[in_i][o_ch], input_size, stride, filter_size - padding - 1);
+                dinputs_i[i_ch] = dinputs_i[i_ch].array() + grad_contrib.array();
             }
         }
         
-        // Appliquer la dérivée de ReLU
-        for(int i_ch = 0; i_ch < input_ch; i_ch++) {
-            for(int i = 0; i < input_size; i++) {
-                for(int j = 0; j < input_size; j++) {
-                    if(inputs[in_i][i_ch](i, j) <= 0) {
-                        dinputs_i[i_ch](i, j) = 0;
-                    }
-                }
-            }
-        }
+
         
         dinputs.push_back(dinputs_i);
     }
@@ -203,6 +177,7 @@ PoolLayer::PoolLayer(int in_size, int in_ch, int p_size)
 vector<vector<MatrixXd>> &PoolLayer::backward(std::vector<std::vector<MatrixXd>> &dvalue)
 {
     int n_data = dvalue.size();
+    dinput.clear();
     for(int in_i = 0; in_i<n_data; in_i++){
         
         vector<MatrixXd> dinput_i(input_ch);
@@ -240,6 +215,7 @@ vector<vector<MatrixXd>> &PoolLayer::backward(std::vector<std::vector<MatrixXd>>
 void PoolLayer::forward(const std::vector<std::vector<MatrixXd>>& batch_in_maps){
     int n_inputs = batch_in_maps.size();
     int output_ch = input_ch;
+    output_maps.clear();
     for(int i_ = 0; i_ < n_inputs; i_++){
         std::vector<MatrixXd> input_maps_i = batch_in_maps[i_];
         std::vector<MatrixXd> output_maps_i(output_ch);
