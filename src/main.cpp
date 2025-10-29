@@ -15,7 +15,6 @@ int main() {
 
 
 
-
         // Charger le dataset d'images
         cout << "=== CHARGEMENT DU DATASET ===" << endl;
         ImageDataset imgDataset = loadDataSet();
@@ -75,12 +74,16 @@ int main() {
       
         // Première couche de convolution
         ConvLayer conv1(image_size, input_channels, 8, 3, 1, 1); // 8 filtres de 3x3
+
+        Activation_ReLU_Conv conv1_activation;
      
         // Première couche de pooling
         PoolLayer pool1(conv1.output_size, conv1.output_ch, 2); // Pooling 2x2
         
         // Deuxième couche de convolution
         ConvLayer conv2(pool1.output_size, pool1.input_ch, 16, 3, 1, 1); // 16 filtres de 3x3
+
+        Activation_ReLU_Conv conv2_activation;
         
         // Deuxième couche de pooling
         PoolLayer pool2(conv2.output_size, conv2.output_ch, 2); // Pooling 2x2
@@ -110,7 +113,7 @@ int main() {
         // Log de l'architecture;
         logCNNArchitecture(imgDataset, conv1, pool1, conv2, pool2, image_size, input_channels, n_images);
 
-        Optimizer_SGD optimizer(.02);
+        Optimizer_SGD optimizer(.05);
 
 
 
@@ -154,8 +157,10 @@ int main() {
             // cout << "\n=== PHASE DE CONVOLUTION ===" << endl;
             // Forward pass through convolutional layers
             conv1.forward(inputs);
+            conv1_activation.forward(conv1.output_maps);
             pool1.forward(conv1.output_maps);
             conv2.forward(pool1.output_maps);
+            conv2_activation.forward(conv2.output_maps);
             pool2.forward(conv2.output_maps);                
             X = pool2.flatten();
         
@@ -165,8 +170,7 @@ int main() {
             dense2.forward(activation1.output);
             activation2.forward(dense2.output);
             dense3.forward(activation2.output);
-            double loss = loss_activation.forward(static_cast<const MatrixXd&>(dense3.output), 
-                                     static_cast<const VectorXd&>(y));
+            double loss = loss_activation.forward(static_cast<const MatrixXd&>(dense3.output), static_cast<const VectorXd&>(y));
 
 
             // Calcul de la précision
@@ -201,8 +205,10 @@ int main() {
             activation1.backward(dense2.dinputs);
             dense1.backward(activation1.dinputs);
             pool2.backward(pool2.unflatten(dense1.dinputs));
-            conv2.backward(pool2.dinput);
+            conv2_activation.backward(pool2.dinput);
+            conv2.backward(conv2_activation.dinputs);
             pool1.backward(conv2.dinputs);
+            conv1_activation.backward(pool1.dinput);
             conv1.backward(pool1.dinput);
 
             optimizer.update_params(dense1);

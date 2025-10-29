@@ -32,6 +32,7 @@ public:
 class Activation_ReLU{
 public:
 
+    MatrixXd inputs;
     MatrixXd output;
     MatrixXd dinputs;
 

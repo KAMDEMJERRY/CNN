@@ -98,13 +98,14 @@ void DenseLayer::backward(const MatrixXd& dvalues){
 const MatrixXd& DenseLayer::getOutput(){ return output; }
 
 MatrixXd& Activation_ReLU::forward(const MatrixXd& inputs){
-    output = inputs.array().max(0.001 * inputs.array());
+    
+    this->inputs = inputs;
+    output = inputs.array().max(0);
     return output;
 }
 MatrixXd& Activation_ReLU::backward(const MatrixXd& dvalues){
     try{
-        Activation_ReLU::dinputs = dvalues;
-        Activation_ReLU::dinputs = (Activation_ReLU::dinputs.array() > 0).cast<double>();
+        Activation_ReLU::dinputs = dvalues.array() * (this->inputs.array() > 0).cast<double>();
         return Activation_ReLU::dinputs;
     }catch(const std::exception& e){
         std::string new_msg(std::string(e.what()) + " ::  Activation ReLU backward");

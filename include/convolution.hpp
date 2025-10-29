@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cmath>
 #include <Eigen/Dense>
 #include <stdexcept>
 
@@ -40,6 +41,17 @@ public:
     MatrixXd full_conv(const MatrixXd &input, const MatrixXd &kernel, int padding = 0);
 };
 
+
+class Activation_ReLU_Conv{
+public:
+    std::vector<std::vector<MatrixXd>> inputs;
+    std::vector<std::vector<MatrixXd>> outputs;
+    std::vector<std::vector<MatrixXd>> dinputs;
+    
+    std::vector<std::vector<MatrixXd>>& forward(const std::vector<std::vector<MatrixXd>>& inputs);
+    std::vector<std::vector<MatrixXd>>& backward(const std::vector<std::vector<MatrixXd>>& dvalues);
+};
+
 // Déclaration de la classe PoolLayer
 class PoolLayer {
 public:
@@ -52,6 +64,7 @@ public:
     std::vector<std::vector<MatrixXd>> output_maps;
     std::vector<std::vector<MatrixXd>> dvalue;
     std::vector<std::vector<MatrixXd>> dinput;
+    std::vector<std::vector<std::vector<std::pair<int, int>>>> max_indices;
 
     MatrixXd flats_output;
     
