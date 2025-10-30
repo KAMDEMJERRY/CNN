@@ -4,16 +4,17 @@
 #include <iostream>
 #include <algorithm>
 #include <utility>
+#include "model.hpp"
 
 using namespace std;
 using namespace Eigen;
 
 
 
-int main() {
+int main(int argc, char*argv[]) {
     try {
 
-
+        
 
         // Charger le dataset d'images
         cout << "=== CHARGEMENT DU DATASET ===" << endl;
@@ -48,86 +49,6 @@ int main() {
         int image_size = first_image.rows(); // Les images sont carrées (128x128)
         int input_channels = 1; // Images en niveaux de gris
 
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // Création de l'architecture CNN
-        cout << "=== CONFIGURATION DU CNN ===" << endl;
-      
-        // Première couche de convolution
-        ConvLayer conv1(image_size, input_channels, 8, 3, 1, 1); // 8 filtres de 3x3
-
-        Activation_ReLU_Conv conv1_activation;
-     
-        // Première couche de pooling
-        PoolLayer pool1(conv1.output_size, conv1.output_ch, 2); // Pooling 2x2
-        
-        // Deuxième couche de convolution
-        ConvLayer conv2(pool1.output_size, pool1.input_ch, 16, 3, 1, 1); // 16 filtres de 3x3
-
-        Activation_ReLU_Conv conv2_activation;
-        
-        // Deuxième couche de pooling
-        PoolLayer pool2(conv2.output_size, conv2.output_ch, 2); // Pooling 2x2
-
-        // Calcul de la taille après aplatissement
-        int flattened_size = pool2.output_size * pool2.output_size * pool2.input_ch;
-        
-        // Préparer la matrice d'entrée pour les couches denses
-        MatrixXd X(n_images, flattened_size);
-
-        // Initialiser les couches denses
-        DenseLayer dense1(flattened_size, 64);  // Augmenté la taille pour plus de capacité
-       
-        Activation_ReLU activation1;
-
-        DenseLayer dense2(64, 32);              // Couche intermédiaire
-        
-        Activation_ReLU activation2;
-
-        DenseLayer dense3(32, imgDataset.classes.size());  // Sortie = nombre de classes
-        
-        // Activation_Softmax activation3;
-
-        // LossCategoricalCrossentropy loss_function;
-        Activation_Softmax_Loss_CategoricalCrossentropy loss_activation;
-
-        // Log de l'architecture;
-        logCNNArchitecture(imgDataset, conv1, pool1, conv2, pool2, image_size, input_channels, n_images);
-
-        Optimizer_SGD optimizer(.05);
-
-
-
-     
-
-
-
-
-
-
-
-
-
-
         std::vector<std::vector<MatrixXd>> inputs(n_images);
         for (int img_idx = 0; img_idx < n_images; ++img_idx) {
             inputs[img_idx].push_back(imgDataset.images[img_idx]);
@@ -137,94 +58,76 @@ int main() {
 
 
 
-        // === CONVOLUTION SUR TOUTES LES IMAGES ===
-        // cout << "\n=== PHASE DE CONVOLUTION ===" << endl;
-
-        
-        
-        
 
 
 
 
+        CNNParameters params;
+        params.epochs = 100;
+        params.learning_rate = 0.05;
+        params.checkpoint = 1;  // Corrigé: checkpoints -> checkpoint
 
+        // Configuration Conv1
+        params.conv1_inputsize = image_size;
+        params.conv1_input_channel_number = input_channels;
+        params.conv1_filter_number = 8;
+        params.conv1_filter_size = 3;
+        params.conv1_padding = 1;
+        params.conv1_stride = 1;
+        params.pool1_size = 2;
 
-        // === CLASSIFICATION ===
+        // Configuration Conv2 (corrigé: input_channel_number devrait être 8, pas input_channels)
+        params.conv2_filter_number = 16;            // 16 filtres comme défini dans conv2
+        params.conv2_filter_size = 5;
+        params.conv2_padding = 1;
+        params.conv2_stride = 1;
 
-        for(int i_ = 0; i_ < 100; i_++){
-    
+        params.pool2_size = 2;
 
-            // cout << "\n=== PHASE DE CONVOLUTION ===" << endl;
-            // Forward pass through convolutional layers
-            conv1.forward(inputs);
-            conv1_activation.forward(conv1.output_maps);
-            pool1.forward(conv1.output_maps);
-            conv2.forward(pool1.output_maps);
-            conv2_activation.forward(conv2.output_maps);
-            pool2.forward(conv2.output_maps);                
-            X = pool2.flatten();
-        
-            // cout << "\n=== PHASE DE CLASSIFICATION ===" << endl;
-            dense1.forward(X);
-            activation1.forward(dense1.output);
-            dense2.forward(activation1.output);
-            activation2.forward(dense2.output);
-            dense3.forward(activation2.output);
-            double loss = loss_activation.forward(static_cast<const MatrixXd&>(dense3.output), static_cast<const VectorXd&>(y));
+        // Configuration Conv3 (si vous l'utilisez plus tard, sinon vous pouvez supprimer)
 
+        params.conv3_filter_number = 8;
+        params.conv3_filter_size = 5;
+        params.conv3_padding = 1;
+        params.conv3_stride = 1;
 
-            // Calcul de la précision
-            int correct_predictions = 0;
-            for (int i = 0; i < n_images; ++i) {
-                int predicted_class = 0;
-                double max_prob = loss_activation.output(i, 0);
-                for (int j = 1; j < loss_activation.output.cols(); ++j) {
-                    if (loss_activation.output(i, j) > max_prob) {
-                        max_prob = loss_activation.output(i, j);
-                        predicted_class = j;
-                    }
-                }
-                if (predicted_class == Y[i]) {
-                    correct_predictions++;
-                }
+        params.pool3_size = 2;
+
+        // Configuration des couches denses
+        params.dense2_inputsize = 64;              // Sortie de dense1 = entrée de dense2
+        params.dense3_inputsize = 32;              // Sortie de dense2 = entrée de dense3
+        params.dense4_inputsize = imgDataset.classes.size(); // Sortie de dense3 = nombre de classes
+
+        CNNModel cnn_model(params);
+        cnn_model.compile();
+        // model.load()
+
+        while(1){
+            std::cout << "0: Train | 1: Test | 2: Quit" << std::endl;
+            int choice;
+            std::cout << ">>> ";
+            std::cin >> choice;
+            switch (choice)
+            {
+                case 0:
+                    cnn_model.fit(inputs, y);
+                    cnn_model.dump();
+                    break;
+                case 1:
+                    cnn_model.evaluate(inputs, y);
+                    return 0;
+                case 2:
+                    break;
+                default:
+                    break;
             }
-            double accuracy = static_cast<double>(correct_predictions) / n_images * 100.0;
-            
-            cout << "=== RÉSULTATS ===" << endl;
-            cout << "mise a jour iteration: " << i_;
-            cout << "  loss : " << loss;
-            cout << "  acc: " << accuracy << "% (" << correct_predictions << "/" << n_images << ")" << endl;
-            
-            loss_activation.backward(loss_activation.output, y);
-            dense3.backward(loss_activation.dinputs);
-            activation2.backward(dense3.dinputs);
-            
-            dense2.backward(activation2.dinputs);
-
-
-            activation1.backward(dense2.dinputs);
-            dense1.backward(activation1.dinputs);
-            pool2.backward(pool2.unflatten(dense1.dinputs));
-            conv2_activation.backward(pool2.dinput);
-            conv2.backward(conv2_activation.dinputs);
-            pool1.backward(conv2.dinputs);
-            conv1_activation.backward(pool1.dinput);
-            conv1.backward(pool1.dinput);
-
-            optimizer.update_params(dense1);
-            optimizer.update_params(dense2);
-            optimizer.update_params(dense3);
-            optimizer.update_params(conv1);
-            optimizer.update_params(conv2);
-
-            
         }
-    
+        
+  
     } catch (const std::exception& e) {
         cerr << "ERREUR: " << e.what() << endl;
         return 1;
     }
     
-    cout << "\n=== PROCESSUS TERMINÉ AVEC SUCCÈS ===" << endl;
     return 0;
 }

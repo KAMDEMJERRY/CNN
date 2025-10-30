@@ -24,6 +24,7 @@ public:
 
 
     DenseLayer(int n_inputs, int n_neurons);
+    DenseLayer(){};
     MatrixXd& forward(const MatrixXd& inputs);
     void backward(const MatrixXd& dvalues);
     const MatrixXd& getOutput();
