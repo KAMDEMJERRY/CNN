@@ -94,7 +94,7 @@ public:
     ~CNNModel() = default;
     void compile();
     void fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y);
-    void evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y);
+    void evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y, vector<string> &classes);
     void dump(); // every epoch % checkpoint save the model
     void load();
     // auto forward();

@@ -103,16 +103,16 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y)
             //cout << "Après pool1: " << pool1.output_maps[0][0].rows() << "x" << pool1.output_maps[0][0].cols() << endl;
             
             conv2.forward(pool1.output_maps);
-            cout << "Après conv2: " << conv2.output_maps[0][0].rows() << "x" << conv2.output_maps[0][0].cols() << endl;
+            // cout << "Après conv2: " << conv2.output_maps[0][0].rows() << "x" << conv2.output_maps[0][0].cols() << endl;
             conv2_activation.forward(conv2.output_maps);
             pool2.forward(conv2_activation.outputs);
-            cout << "Après pool2: " << pool2.output_maps[0][0].rows() << "x" << pool2.output_maps[0][0].cols() << endl;
+            // cout << "Après pool2: " << pool2.output_maps[0][0].rows() << "x" << pool2.output_maps[0][0].cols() << endl;
 
             conv3.forward(pool2.output_maps);
-            cout << "Après conv3: " << conv3.output_maps[0][0].rows() << "x" << conv3.output_maps[0][0].cols() << endl;
+            // cout << "Après conv3: " << conv3.output_maps[0][0].rows() << "x" << conv3.output_maps[0][0].cols() << endl;
             conv3_activation.forward(conv3.output_maps);
             pool3.forward(conv3_activation.outputs);
-            cout << "Après pool3: " << pool3.output_maps[0][0].rows() << "x" << pool3.output_maps[0][0].cols() << endl;
+            // cout << "Après pool3: " << pool3.output_maps[0][0].rows() << "x" << pool3.output_maps[0][0].cols() << endl;
 
             MatrixXd X;
             X = pool3.flatten();
@@ -169,7 +169,7 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y)
     }
 }
 
-void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y)
+void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y, vector<string>& classes)
 {
     cout << "\n=== PHASE D'ÉVALUATION ===" << endl;
     
@@ -225,8 +225,10 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y)
         // Log the prediction details
         cout << "Sample " << i << ":" << endl;
         cout << "  Predicted class: " << predicted_class 
+             << " (" << classes[predicted_class] << ")"
              << " | Probability: " << max_prob * 100 << "%" 
              << " | Ground truth: " << ground_truth 
+             << " (" << classes[ground_truth] << ")"
              << " | " << (predicted_class == ground_truth ? "CORRECT" : "WRONG") << endl;
     }
     

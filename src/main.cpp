@@ -15,45 +15,25 @@ int main(int argc, char*argv[]) {
     try {
 
         
-
+        
         // Charger le dataset d'images
         cout << "=== CHARGEMENT DU DATASET ===" << endl;
-        ImageDataset imgDataset = loadDataSet();
-        int n_images = imgDataset.images.size();
-        vector<int> Y = imgDataset.getY_encoded();
-        VectorXd y(Y.size());
-        for(int i = 0; i < Y.size(); i++) {
-            y(i) = static_cast<double>(Y[i]);
-        }
+        ImageDataset imgDataset(BASE_DATA_PATH);
+        imgDataset.split = 0.8; // 80% pour l'entraînement, 20% pour le test
+        std::vector<std::vector<MatrixXd>> inputs_train  = imgDataset.getTrain().first;
+        std::vector<std::vector<MatrixXd>> inputs_test  = imgDataset.getTest().first;
+        VectorXd y_train = (imgDataset.getTrain().second).cast<double>();
+        VectorXd y_test = (imgDataset.getTest()).second.cast<double>();
+        int image_size = imgDataset.image_size; // Les images sont carrées (128x128)
+        int input_channels = imgDataset.channels; // Images en niveaux de RGB
+
 
         // Vérifier que des images ont été chargées
-        if (imgDataset.images.empty()) {
-            throw std::runtime_error("Aucune image chargée dans le dataset");
-        }
+        assert(!imgDataset.images.empty() && "Le dataset d'images ne doit pas être vide");
+        assert(!imgDataset.labels.empty() && "Les labels ne doivent pas être vides");
         
         // Afficher les informations du dataset
-        cout << "Nombre d'images chargées: " << imgDataset.images.size() << endl;
-        cout << "Dimensions des images: " << imgDataset.images[0].rows() << "x" << imgDataset.images[0].cols() << endl;
-        cout << "Nombre de classes: " << imgDataset.classes.size() << endl;
-        cout << "Classes: ";
-        for (const auto& cls : imgDataset.classes) {
-            cout << cls << " ";
-        }
-        cout << "\n\n";
-
-        // Prendre la première image comme exemple
-        MatrixXd first_image = imgDataset.images[0];
-        cout << "Première image (extrait 10x10):\n" << first_image.block(0, 0, 10, 10) << "\n\n";
-        cout << "Label de la première image: " << imgDataset.labels[0] << "\n\n";
-
-        int image_size = first_image.rows(); // Les images sont carrées (128x128)
-        int input_channels = 1; // Images en niveaux de gris
-
-        std::vector<std::vector<MatrixXd>> inputs(n_images);
-        for (int img_idx = 0; img_idx < n_images; ++img_idx) {
-            inputs[img_idx].push_back(imgDataset.images[img_idx]);
-        }    
-       
+        imgDataset.summary();
 
 
 
@@ -61,6 +41,9 @@ int main(int argc, char*argv[]) {
 
 
 
+
+
+        // Définir les paramètres du modèle CNN
 
         CNNParameters params;
         params.epochs = 100;
@@ -102,6 +85,17 @@ int main(int argc, char*argv[]) {
         cnn_model.compile();
         // model.load()
 
+
+
+
+
+
+
+
+
+
+
+        
         while(1){
             std::cout << "0: Train | 1: Test | 2: Quit" << std::endl;
             int choice;
@@ -110,11 +104,11 @@ int main(int argc, char*argv[]) {
             switch (choice)
             {
                 case 0:
-                    cnn_model.fit(inputs, y);
+                    cnn_model.fit(inputs_train, y_train);
                     cnn_model.dump();
                     break;
                 case 1:
-                    cnn_model.evaluate(inputs, y);
+                    cnn_model.evaluate(inputs_train, y_test, imgDataset.classes);
                     return 0;
                 case 2:
                     break;

@@ -3,68 +3,106 @@
 
 #include <Eigen/Dense>
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/eigen.hpp> // <-- Then include OpenCV's eigen header
+#include <opencv2/core.hpp> 
 #include <vector>
 #include <string>
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
 #include <random>
+#include <utility>
+#include <numeric> // for std::iota
 
 using namespace Eigen;
 using namespace std;
 using namespace cv;
 namespace fs = std::filesystem;
 
+
 // Variables globales externes
 extern String BASE_DATA_PATH;
 extern vector<String> class_path;
 
-// Déclaration de la classe ImageDataset
-class ImageDataset {
-public:
-    vector<String> classes;
-    vector<MatrixXd> images;
-    vector<String> labels;
-    vector<int> encoded_labels;
 
-    // Constructeur
-    ImageDataset( 
-        vector<String> classes,
-        vector<MatrixXd> images,
-        vector<String> labels
-    );
-
-    // Méthodes
-    vector<int> ordinalEncoding(vector<string>& classes, vector<string>& data_labels);
-    vector<MatrixXd> getX();
-    vector<string> getY();
-    vector<int> getY_encoded();
-};
 
 // Déclaration de la classe ImageDatasetLoader
 class ImageDatasetLoader {
 private:
-    vector<MatrixXd> images;
+    string dataset_path;
+    vector<vector<MatrixXd>> images;
+    vector<string> classes;// Déclaration des fonctions externes
     vector<string> labels;// Déclaration des fonctions externes
     int image_height;
     int image_width;
 
 public:
+
+    // Constructeur
+    ImageDatasetLoader(string dataset_path);
+    ImageDatasetLoader()= default;
+ 
     // Méthodes
-    MatrixXd loadImage(const string& image_path, int target_height = -1, int target_width = -1);
-    void loadDataset(const vector<string>& image_paths, 
-                    const vector<string>& image_labels = {},
-                    int target_height = 64, 
-                    int target_width = 64);
-    MatrixXd flattenImages() const;
-    void printStats() const;
+    vector<MatrixXd> loadImage(const string& image_path, int target_height = -1, int target_width = -1);
+
+    void loadDataset(const string& dataset_path,
+                     int target_height = 128, 
+                     int target_width = 128);
     
     // Getters
-    const vector<MatrixXd>& getImages() const;
-    const vector<string>& getLabels() const;
+    const std::vector<std::vector<MatrixXd>>& getImages() const;
+    const std::vector<string>& getLabels() const;
+    const std::vector<string>& getClasses() const;
+
     int getImageHeight() const;
     int getImageWidth() const;
+    void afficherImageEigenNormalisee(const Eigen::MatrixXd &r, const Eigen::MatrixXd &g, const Eigen::MatrixXd &b);
 };
+
+
+
+// Déclaration de la classe ImageDataset
+class ImageDataset {
+public:
+    vector<string> classes;
+    vector<vector<MatrixXd>> images;
+    vector<string> labels;
+    VectorXi encoded_labels;
+    float split = 0.8; // Pourcentage de données pour l'entraînement
+    int channels = 3; // Nombre de canaux (RGB)
+    int image_size = 128; // Taille des images (assumées carrées)
+    ImageDatasetLoader loader;
+    
+    
+
+
+
+
+    // Constructeur
+    // ImageDataset( 
+    //     vector<String> classes,
+    //     vector<MatrixXd> images,
+    //     vector<String> labels
+    // );
+    ImageDataset(
+        string dataset_path
+    );
+    ImageDataset()= default;
+
+    // Méthodes
+    VectorXi ordinalEncoding(vector<string>& classes, vector<string>& data_labels);
+    void shuffle_dataset();
+    
+    // Getters
+    vector<vector<MatrixXd>> getX();
+    std::pair<vector<string>, VectorXi> getY();
+    pair<vector<vector<MatrixXd>>, VectorXi> getTrain();
+    pair<vector<vector<MatrixXd>>, VectorXi> getTest();
+
+    void summary();
+};
+
+
 
 // Déclaration de la classe ImageUtils
 class ImageUtils {
@@ -78,7 +116,14 @@ public:
 
 // Déclarations des fonctions
 std::vector<std::string> getJpegFiles(const std::string& directoryPath);
-vector<int> ordinalEncoding(vector<string>& classes, vector<string>& data_labels);
+std::vector<std::string> getDirectoriesInDirectory(const fs::path &directoryPath);
+vector<int> ordinalEncoding(vector<string> &classes, vector<string> &data_labels);
+
+
+// Add these overloaded reorder functions
+void reorder(std::vector<std::vector<Eigen::MatrixXd>> &vec, const std::vector<size_t> &indices);
+void reorder(std::vector<std::string> &vec, const std::vector<size_t> &indices);
+void reorder(Eigen::VectorXi &vec, const std::vector<size_t> &indices);
 
 // Déclaration du template
 template<typename T1, typename T2>

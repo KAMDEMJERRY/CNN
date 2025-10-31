@@ -15,10 +15,4 @@ void logCNNArchitecture(const ImageDataset& imgDataset,
                               int image_size, int input_channels, int n_images,
                               const vector<int>& dense_architecture = {64, 32});
 
-void displayPredictions(const MatrixXd& predictions, 
-                       const vector<int>& true_labels, 
-                       const VectorXd& Y_encoded,
-                       int num_samples = 5) ;
-
-
 #endif 
