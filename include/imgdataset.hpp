@@ -33,21 +33,22 @@ private:
     vector<vector<MatrixXd>> images;
     vector<string> classes;// Déclaration des fonctions externes
     vector<string> labels;// Déclaration des fonctions externes
+    string color_mode;
     int image_height;
     int image_width;
 
 public:
 
     // Constructeur
-    ImageDatasetLoader(string dataset_path);
+    ImageDatasetLoader(string dataset_path, int img_size ,string color_mode = "RGB");
     ImageDatasetLoader()= default;
  
     // Méthodes
-    vector<MatrixXd> loadImage(const string& image_path, int target_height = -1, int target_width = -1);
+    vector<MatrixXd> loadImage(string image_path,  int target_height = -1, int target_width = -1);
 
-    void loadDataset(const string& dataset_path,
-                     int target_height = 128, 
-                     int target_width = 128);
+    void loadDataset(
+                     int target_height = 28, 
+                     int target_width = 28);
     
     // Getters
     const std::vector<std::vector<MatrixXd>>& getImages() const;
@@ -69,8 +70,8 @@ public:
     vector<string> labels;
     VectorXi encoded_labels;
     float split = 0.8; // Pourcentage de données pour l'entraînement
-    int channels = 3; // Nombre de canaux (RGB)
-    int image_size = 128; // Taille des images (assumées carrées)
+    int channels ; // Nombre de canaux (RGB)
+    int image_size; // Taille des images (assumées carrées)
     ImageDatasetLoader loader;
     
     
@@ -85,9 +86,12 @@ public:
     //     vector<String> labels
     // );
     ImageDataset(
-        string dataset_path
+        string dataset_path,
+        int img_size,
+        string color_mode = "GARY"
     );
-    ImageDataset()= default;
+    std::vector<std::vector<MatrixXd>> normalize();
+    ImageDataset() = default;
 
     // Méthodes
     VectorXi ordinalEncoding(vector<string>& classes, vector<string>& data_labels);

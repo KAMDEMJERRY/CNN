@@ -5,27 +5,29 @@
 #include <algorithm>
 #include <utility>
 #include "model.hpp"
+#include <pqxx/pqxx>
+
 
 using namespace std;
 using namespace Eigen;
 
 
+// #define BASE_DATA_PATH "../../../dataset/bloodcell/images/TRAIN/"
+// #define  BASE_DATA_PATH  "../../../dataset/bloodcellsub/images/TRAIN/"
+#define  BASE_DATA_PATH  "../../../dataset/bloodcellsub1/images/TRAIN/"
 
 int main(int argc, char*argv[]) {
     try {
 
-        
-        
-        // Charger le dataset d'images
-        cout << "=== CHARGEMENT DU DATASET ===" << endl;
-        ImageDataset imgDataset(BASE_DATA_PATH);
+        cout << "=== CHARGEMENT DU DATASET ===" <<endl;
+        ImageDataset imgDataset(BASE_DATA_PATH, 220, "GRAY");   // RGB or GRAY
         imgDataset.split = 0.8; // 80% pour l'entraînement, 20% pour le test
         std::vector<std::vector<MatrixXd>> inputs_train  = imgDataset.getTrain().first;
         std::vector<std::vector<MatrixXd>> inputs_test  = imgDataset.getTest().first;
         VectorXd y_train = (imgDataset.getTrain().second).cast<double>();
         VectorXd y_test = (imgDataset.getTest()).second.cast<double>();
         int image_size = imgDataset.image_size; // Les images sont carrées (128x128)
-        int input_channels = imgDataset.channels; // Images en niveaux de RGB
+        int input_channels = imgDataset.channels; // Images en niveaux de RGB(3) ou de gris (1)
 
 
         // Vérifier que des images ont été chargées
@@ -47,14 +49,16 @@ int main(int argc, char*argv[]) {
 
         CNNParameters params;
         params.epochs = 100;
-        params.learning_rate = 0.05;
+        params.learning_rate = 0.001;
+        params.decay = 1e-4;
+        params.momentum = 0.9;
         params.checkpoint = 1;  // Corrigé: checkpoints -> checkpoint
 
         // Configuration Conv1
         params.conv1_inputsize = image_size;
         params.conv1_input_channel_number = input_channels;
         params.conv1_filter_number = 8;
-        params.conv1_filter_size = 3;
+        params.conv1_filter_size = 5;
         params.conv1_padding = 1;
         params.conv1_stride = 1;
         params.pool1_size = 2;
@@ -69,8 +73,8 @@ int main(int argc, char*argv[]) {
 
         // Configuration Conv3 (si vous l'utilisez plus tard, sinon vous pouvez supprimer)
 
-        params.conv3_filter_number = 8;
-        params.conv3_filter_size = 5;
+        params.conv3_filter_number = 32;
+        params.conv3_filter_size = 3;
         params.conv3_padding = 1;
         params.conv3_stride = 1;
 
@@ -101,6 +105,7 @@ int main(int argc, char*argv[]) {
             int choice;
             std::cout << ">>> ";
             std::cin >> choice;
+            bool quit = false;
             switch (choice)
             {
                 case 0:
@@ -108,12 +113,19 @@ int main(int argc, char*argv[]) {
                     cnn_model.dump();
                     break;
                 case 1:
-                    cnn_model.evaluate(inputs_train, y_test, imgDataset.classes);
-                    return 0;
-                case 2:
+                    cnn_model.evaluate(inputs_test, y_test, imgDataset.classes);
                     break;
+
+                case 2:
+                    quit = true;
+                    break;
+
                 default:
                     break;
+            }
+
+            if(quit){
+                break;
             }
         }
         

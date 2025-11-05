@@ -57,6 +57,9 @@ DenseLayer::DenseLayer(int n_inputs, int n_neurons)
     biases = MatrixXd::Zero(1, n_neurons);
     dweights = MatrixXd::Zero(n_inputs, n_neurons);
     dbiases = MatrixXd::Zero(1, n_neurons);
+    
+    weights_momentum = MatrixXd::Zero(weights.rows(), weights.cols());
+    biases_momentum = RowVectorXd::Zero(biases.size());
 }
 
 MatrixXd& DenseLayer::forward(const MatrixXd& inputs) {
@@ -299,35 +302,85 @@ MatrixXd& Activation_Softmax_Loss_CategoricalCrossentropy::backward(const Matrix
 }
 
 
-Optimizer_SGD::Optimizer_SGD(double learning_rate){
-    this->learning_rate = learning_rate;
+Optimizer_SGD::Optimizer_SGD(double learning_rate, double decay, double momentum):learning_rate(learning_rate), current_learning_rate(learning_rate), decay(decay){
+    iterations = 0;
+    this->momentum = momentum;
+
 }
 
-void Optimizer_SGD::update_params(DenseLayer& layer){
-    try{
-        layer.weights = layer.weights.array() - learning_rate * layer.dweights.array();
-        layer.biases = layer.biases.array() - learning_rate * layer.dbiases.array();
-    }catch(const std::exception& e){
-        std::cout << e.what() << " :: Optimizer SGD exception " << std::endl;
-        throw (e);
+void Optimizer_SGD::pre_update_params()
+{
+    if(decay){
+        current_learning_rate = learning_rate * (1. / (1. + decay * iterations));
     }
+}
+
+void Optimizer_SGD::update_params(DenseLayer &layer)
+{
+    MatrixXd weights_updates;
+    RowVectorXd biases_updates;
+    if(momentum){
+        weights_updates = momentum * layer.weights_momentum - current_learning_rate * layer.dweights;
+        layer.weights_momentum = weights_updates;
+        
+        biases_updates = momentum * layer.biases_momentum - current_learning_rate * layer.dbiases;
+        layer.biases_momentum = biases_updates;
+    }
+    else{
+        weights_updates = - current_learning_rate * layer.dweights.array();
+        biases_updates = - current_learning_rate * layer.dbiases.array();
+    }
+
+    layer.weights = layer.weights.array() + weights_updates.array();
+    layer.biases = layer.biases.array() + biases_updates.array();
 
 }
 
 void Optimizer_SGD::update_params(ConvLayer& layer){
-    try{
+    // std::ofstream debug_file("/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/optimizer_debug.txt", std::ios::app);
 
-        for(int o_ch = 0; o_ch < layer.output_ch ; o_ch++){
-            for(int i_ch = 0; i_ch < layer.input_ch; i_ch++){
-                layer.filters[o_ch][i_ch] = layer.filters[o_ch][i_ch].array() - learning_rate * layer.dweights[o_ch][i_ch].array();
+    std::vector<std::vector<MatrixXd>> filters_updates(layer.output_ch, std::vector<MatrixXd>(layer.input_ch));
+    VectorXd biases_updates(layer.output_ch); 
+    
+    // Initialiser les matrices de mise à jour
+    for(int oc = 0; oc < layer.output_ch; ++oc) {
+        for(int ic = 0; ic < layer.input_ch; ++ic) {
+            filters_updates[oc][ic] = MatrixXd::Zero(layer.filter_size, layer.filter_size);
+            // debug_file << "weights gradient grad[" << oc << "][" << ic << "] to zeros.\n" << layer.dweights[oc][ic] << std::endl;
+        }
+    }
+    biases_updates.setZero();
+    
+    if(momentum){
+        // Calculer les updates avec momentum
+        for(int oc = 0; oc < layer.output_ch; oc++){
+            for(int ic = 0; ic < layer.input_ch; ic++){
+                filters_updates[oc][ic] = (momentum * layer.filters_momentum[oc][ic].array()).array() - (current_learning_rate * layer.dweights[oc][ic].array()).array();
+                layer.filters_momentum[oc][ic] = filters_updates[oc][ic];
             }
         }
-        
-        layer.biases = layer.biases.array() - learning_rate * layer.dbiases.array();
 
-    }catch(const std::exception& e){
-        std::cout << e.what() << " :: Optimizer SGD exception " << std::endl;
-        throw (e);
+        biases_updates = momentum * layer.biases_momentum.array() - current_learning_rate * layer.dbiases.array();
+        layer.biases_momentum = biases_updates;
+    } else {
+        // Calculer les updates sans momentum
+        for(int oc = 0; oc < layer.output_ch; oc++){
+            for(int ic = 0; ic < layer.input_ch; ic++){
+                filters_updates[oc][ic] = -current_learning_rate * layer.dweights[oc][ic].array();
+            }
+        }
+        biases_updates = -current_learning_rate * layer.dbiases.array();
     }
 
+    // Appliquer les updates aux paramètres
+    for(int oc = 0; oc < layer.output_ch; oc++){
+        for(int ic = 0; ic < layer.input_ch; ic++){
+            layer.filters[oc][ic] = layer.filters[oc][ic].array() + filters_updates[oc][ic].array();
+        }
+    }
+    layer.biases = layer.biases.array() + biases_updates.array();
+}
+
+void Optimizer_SGD::post_update_params(){
+    iterations += 1;
 }

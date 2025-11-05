@@ -31,6 +31,9 @@ public:
     std::vector<std::vector<MatrixXd>> dweights;
     VectorXd dbiases;
 
+    std::vector<std::vector<MatrixXd>> filters_momentum;
+    VectorXd biases_momentum;
+
     // Constructeur
     ConvLayer(int in_size, int in_ch, int f_num, int f_size, int pad = 1, int str = 1);
     ConvLayer() {};

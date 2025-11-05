@@ -43,14 +43,23 @@ ConvLayer::ConvLayer(int in_size, int in_ch, int f_num, int f_size, int pad, int
 
 void ConvLayer::initialize() {
     filters.resize(output_ch, std::vector<MatrixXd>(input_ch));
+    filters_momentum.resize(output_ch,  std::vector<MatrixXd>(input_ch));
+
+    // Calcul du scale pour He initialization
+    double scale = sqrt(2.0 / (input_ch * filter_size * filter_size));
+    
     for(int oc = 0; oc < output_ch; ++oc) {
         for(int ic = 0; ic < input_ch; ++ic) {
-            filters[oc][ic] = MatrixXd::Random(filter_size, filter_size) * 0.1;
+            filters[oc][ic] = MatrixXd::Random(filter_size, filter_size) * scale;
+            filters_momentum[oc][ic] = MatrixXd::Zero(filter_size, filter_size);
         }
     }
+    
     biases = VectorXd::Zero(output_ch);
+    biases_momentum = VectorXd::Zero(output_ch); 
 }
 
+#pragma omp
 void ConvLayer::forward(const std::vector<std::vector<MatrixXd>>& batch_input_maps){
     inputs = batch_input_maps;
     int n_inputs = batch_input_maps.size();

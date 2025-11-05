@@ -6,15 +6,56 @@ vector<String> class_path = {"EOSINOPHIL", "LYMPHOCYTE", "MONOCYTE", "NEUTROPHIL
 
 
 
-ImageDataset::ImageDataset(string dataset_path) : loader(dataset_path){
+ImageDataset::ImageDataset(string dataset_path, int img_size, string color_mode) : loader(dataset_path, img_size ,color_mode), image_size(img_size){
     images = loader.getImages();
+    images = normalize();
     labels = loader.getLabels();
     classes = loader.getClasses();
     ordinalEncoding(classes, labels);
     shuffle_dataset();
+    if(color_mode == "RGB"){
+        channels = 3;
+    } else if (color_mode == "GRAY"){
+        channels = 1;
+    } else {
+        throw std::invalid_argument("Invalid color mode. Use 'RGB' or 'GRAY'.");
+    }
 }
 
-VectorXi ImageDataset::ordinalEncoding(vector<string>& classes, vector<string>& data_labels){
+std::vector<std::vector<MatrixXd>> ImageDataset::normalize(){
+    assert(images.size() > 0 && "No images found for normalization");
+    int N = images.size();      // nombre d'images
+    int M = images[0].size();   // nombre de canaux par image
+    
+    std::vector<MatrixXd> meanImg(M, MatrixXd::Zero(images[0][0].rows(), images[0][0].cols()));
+    std::vector<MatrixXd> stdImg(M, MatrixXd::Zero(images[0][0].rows(), images[0][0].cols()));
+
+    for(int can = 0; can < M; can++){
+        for(int im = 0; im < N; im++){
+            meanImg[can] += images[im][can];
+        }
+        meanImg[can] /= N;
+    }
+
+    for(int can = 0; can < M; can++){
+        for(int im = 0; im < N; im++){
+            MatrixXd diff = images[im][can] - meanImg[can];
+            stdImg[can] += diff.cwiseProduct(diff); // élément-wise square
+        }
+        stdImg[can] = (stdImg[can] / N).cwiseSqrt();
+    }
+
+    for(int im = 0; im < N; im++){
+        for(int can = 0; can < M; can++){
+            images[im][can] = (images[im][can] - meanImg[can]).cwiseQuotient(stdImg[can]);
+        }
+    }
+
+    return images;
+}
+
+VectorXi ImageDataset::ordinalEncoding(vector<string> &classes, vector<string> &data_labels)
+{
     encoded_labels.resize(data_labels.size());
     int j = 0;
     for(string& lab : data_labels){
@@ -46,22 +87,36 @@ VectorXi ImageDataset::ordinalEncoding(vector<string>& classes, vector<string>& 
 
 
 
-ImageDatasetLoader::ImageDatasetLoader(string dataset_path):dataset_path(dataset_path)
+ImageDatasetLoader::ImageDatasetLoader(string dataset_path, int img_size, string color_mode):dataset_path(dataset_path), color_mode(color_mode), image_width(img_size), image_height(img_size)
 {
-    loadDataset(dataset_path, 128, 128);
+
+    loadDataset(img_size, img_size);
+    
 }
 
 // Implémentation de ImageDatasetLoader
-vector<MatrixXd> ImageDatasetLoader::loadImage(const string& image_path, int target_height, int target_width) {
+vector<MatrixXd> ImageDatasetLoader::loadImage(string image_path, int target_height, int target_width) {
+
+    assert(color_mode == "RGB" || color_mode == "GRAY" && "Color mode must be 'RGB' or 'GRAY'");
     assert(target_height > 0 && target_width > 0 && "Target dimensions must be positive");
+
+    Mat image;
+    
+    if(color_mode == "GRAY") {
+        // Charger l'image en niveaux de gris
+        image = imread(image_path, IMREAD_GRAYSCALE);
+    }
+    else{
+        image = imread(image_path, IMREAD_COLOR);
+    }
+
    
-    Mat image = imread(image_path, IMREAD_COLOR);
     // std::cout << "Loading image: " << image_path << " ("
     //           << image.cols << "x" << image.rows << ")" << std::endl;
 
     assert(image.empty() == false && "Image loading failed");
 
-    std::vector<cv::Mat> canaux;
+ 
     
     if (target_height > 0 && target_width > 0) {
         Mat resized_image;
@@ -69,23 +124,41 @@ vector<MatrixXd> ImageDatasetLoader::loadImage(const string& image_path, int tar
         image = resized_image;
     }
 
-    cv::split(image, canaux);
 
-    
-    MatrixXd RED_image(image.rows, image.cols);
-    MatrixXd GREEN_image(image.rows, image.cols);
-    MatrixXd BLUE_image(image.rows, image.cols);
-    vector<MatrixXd> eigen_images;
-    for (int i = 0; i < image.rows; ++i) {
-        for (int j = 0; j < image.cols; ++j) {
-            RED_image(i, j) = static_cast<double>(canaux[2].at<uchar>(i, j)) / 255.0;
-            GREEN_image(i, j) = static_cast<double>(canaux[1].at<uchar>(i, j)) / 255.0;
-            BLUE_image(i, j) = static_cast<double>(canaux[0].at<uchar>(i, j)) / 255.0;
+
+    std::vector<MatrixXd> eigen_images;
+
+    if(color_mode == "GRAY") {
+        // Normaliser les valeurs entre 0 et 1
+        MatrixXd gray_image(image.rows, image.cols);
+        for (int i = 0; i < image.rows; ++i) {
+            for (int j = 0; j < image.cols; ++j) {
+                gray_image(i, j) = static_cast<double>(image.at<uchar>(i, j)) / 255.0;
+            }
         }
+        eigen_images.push_back(gray_image);
+
     }
-    eigen_images.push_back(RED_image);
-    eigen_images.push_back(GREEN_image);
-    eigen_images.push_back(BLUE_image);
+    else{
+        std::vector<cv::Mat> canaux;
+        cv::split(image, canaux);
+            
+        MatrixXd RED_image(image.rows, image.cols);
+        MatrixXd GREEN_image(image.rows, image.cols);
+        MatrixXd BLUE_image(image.rows, image.cols);
+        for (int i = 0; i < image.rows; ++i) {
+            for (int j = 0; j < image.cols; ++j) {
+                RED_image(i, j) = static_cast<double>(canaux[2].at<uchar>(i, j)) / 255.0;
+                GREEN_image(i, j) = static_cast<double>(canaux[1].at<uchar>(i, j)) / 255.0;
+                BLUE_image(i, j) = static_cast<double>(canaux[0].at<uchar>(i, j)) / 255.0;
+            }
+        }
+        eigen_images.push_back(RED_image);
+        eigen_images.push_back(GREEN_image);
+        eigen_images.push_back(BLUE_image);
+    }
+    
+    
     
     // std::cout << "Image loaded and converted to Eigen matrices." << std::endl;
     // std::cout << "Dimensions - R: " << RED_image.rows() << "x" << RED_image.cols()
@@ -93,12 +166,13 @@ vector<MatrixXd> ImageDatasetLoader::loadImage(const string& image_path, int tar
     //           << ", B: " << BLUE_image.rows() << "x" << BLUE_image.cols() << std::endl;
     // std::cout << "----------------------------------------" << std::endl;
     // std::cout << eigen_images.size() << " channels loaded." << std::endl;
-    
+
     return eigen_images;
+
 }
 
 
-void ImageDatasetLoader::loadDataset(const string &dataset_path, int target_height, int target_width)
+void ImageDatasetLoader::loadDataset( int target_height, int target_width)
 {
     this->dataset_path = dataset_path;
     images.clear();
@@ -283,11 +357,16 @@ void ImageDataset::summary()
 
             // Prendre la première image comme exemple
     vector<MatrixXd> first_image = images[0];
-    cout << "Première image (extrait 10x10 du canal rouge):\n" << first_image[0].block(0, 0, 10, 10) << "\n\n";
-    cout << "Première image (extrait 10x10 du canal vert):\n" << first_image[1].block(0, 0, 10, 10) << "\n\n";
-    cout << "Première image (extrait 10x10 du canal bleu):\n" << first_image[2].block(0, 0, 10, 10) << "\n\n";
+    if(first_image.size() == 1) {
+        cout << "Première image (extrait 10x10 du canal gris):\n" << first_image[0].block(0, 0, 10, 10) << "\n\n";
+        // this->loader.afficherImageEigenNormalisee(first_image[0], first_image[0], first_image[0]);
+    } else if (first_image.size() == 3) {
+        cout << "Première image (extrait 10x10 du canal rouge):\n" << first_image[0].block(0, 0, 10, 10) << "\n\n";
+        cout << "Première image (extrait 10x10 du canal vert):\n" << first_image[1].block(0, 0, 10, 10) << "\n\n";
+        cout << "Première image (extrait 10x10 du canal bleu):\n" << first_image[2].block(0, 0, 10, 10) << "\n\n";
+        // this->loader.afficherImageEigenNormalisee(first_image[0], first_image[1], first_image[2]);
 
-    this->loader.afficherImageEigenNormalisee(first_image[0], first_image[1], first_image[2]);
+    }
 
     cout << "Label de la première image: " << labels[0] << "\n\n";
 
@@ -316,10 +395,6 @@ void reorder(Eigen::VectorXi &vec, const std::vector<size_t> &indices) {
     }
     vec = new_vec;
 }
-
-
-
-
 
 void ImageDatasetLoader::afficherImageEigenNormalisee(const Eigen::MatrixXd& r, const Eigen::MatrixXd& g, const Eigen::MatrixXd& b) {
     try {

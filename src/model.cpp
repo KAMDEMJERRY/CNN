@@ -1,6 +1,5 @@
 #include "model.hpp"
 
-
 double calculate_accuracy(const MatrixXd& predictions, const VectorXd& true_labels) {
     int correct = 0;
     int n_samples = predictions.rows();
@@ -33,9 +32,11 @@ CNNModel::CNNModel(CNNParameters& params)
       conv1_activation(), conv2_activation(), conv3_activation(),
       activation1(), activation2(),
       loss_activation(),
-      optimizer(params.learning_rate)
+      optimizer(params.learning_rate, params.decay, params.momentum), eval(metrics_file, std::ios::app)
+
 {
-    // Empty constructor - layers will be initialized in compile()
+    decay = params.decay;
+    momentum = params.momentum;
 }
 
 
@@ -82,6 +83,8 @@ void CNNModel::compile()
     dense3 = DenseLayer( dense2.n_neurons, params.dense4_inputsize);
 
     learning_rate = params.learning_rate;
+    momentum = params.momentum;
+    decay = params.decay;
     epochs = params.epochs;
     checkpoint = params.checkpoint;
 }
@@ -95,34 +98,47 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y)
     for(int epoch = 0; epoch < epochs; ++epoch){
      
           // Forward pass
+            cout << "\nEpoch :" << epoch << "/" << epochs << "\n";
             conv1.forward(inputs);
-            //cout << "Après conv1: " << conv1.output_maps[0][0].rows() << "x" << conv1.output_maps[0][0].cols() << endl;
+            cout << "Après conv1: " << conv1.output_maps[0][0].rows() << "x" << conv1.output_maps[0][0].cols() << endl;
             conv1_activation.forward(conv1.output_maps);
         
             pool1.forward(conv1_activation.outputs);
-            //cout << "Après pool1: " << pool1.output_maps[0][0].rows() << "x" << pool1.output_maps[0][0].cols() << endl;
+            cout << "Après pool1: " << pool1.output_maps[0][0].rows() << "x" << pool1.output_maps[0][0].cols() << endl;
             
             conv2.forward(pool1.output_maps);
-            // cout << "Après conv2: " << conv2.output_maps[0][0].rows() << "x" << conv2.output_maps[0][0].cols() << endl;
+            cout << "Après conv2: " << conv2.output_maps[0][0].rows() << "x" << conv2.output_maps[0][0].cols() << endl;
             conv2_activation.forward(conv2.output_maps);
             pool2.forward(conv2_activation.outputs);
-            // cout << "Après pool2: " << pool2.output_maps[0][0].rows() << "x" << pool2.output_maps[0][0].cols() << endl;
+            cout << "Après pool2: " << pool2.output_maps[0][0].rows() << "x" << pool2.output_maps[0][0].cols() << endl;
 
             conv3.forward(pool2.output_maps);
-            // cout << "Après conv3: " << conv3.output_maps[0][0].rows() << "x" << conv3.output_maps[0][0].cols() << endl;
+            cout << "Après conv3: " << conv3.output_maps[0][0].rows() << "x" << conv3.output_maps[0][0].cols() << endl;
             conv3_activation.forward(conv3.output_maps);
             pool3.forward(conv3_activation.outputs);
-            // cout << "Après pool3: " << pool3.output_maps[0][0].rows() << "x" << pool3.output_maps[0][0].cols() << endl;
+            cout << "Après pool3: " << pool3.output_maps[0][0].rows() << "x" << pool3.output_maps[0][0].cols() << endl;
 
             MatrixXd X;
             X = pool3.flatten();
+            cout << "Après Flatten: " << X.rows() << "x" << X.cols() << endl;
+
             dense1.forward(X);
+            cout << "Après dense1: " << dense1.output.rows() << "x" << dense1.output.cols() << endl;
+            
             activation1.forward(dense1.output);
+            
             dense2.forward(activation1.output);     
+            cout << "Après dense2: " << dense2.output.rows() << "x" << dense2.output.cols() << endl;
+            
             activation2.forward(dense2.output);
+            
             dense3.forward(activation2.output);
+            cout << "Après dense3: " << dense3.output.rows() << "x" << dense3.output.cols() << endl;
+            
             // Calcul de la loss
             double loss = loss_activation.forward(dense3.output, y);
+
+
 
             // Calcul de la précision toutes les 10 époques
             double accuracy = 0.0;
@@ -153,19 +169,23 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y)
             conv1.backward(pool1.dinput);
             
             // Mise à jour des poids
+            optimizer.pre_update_params();
             optimizer.update_params(dense1);
             optimizer.update_params(dense2);
             optimizer.update_params(dense3);
             optimizer.update_params(conv1);
             optimizer.update_params(conv2);
             optimizer.update_params(conv3);
-            
+            optimizer.post_update_params();
             // Affichage des résultats
             if (epoch % params.checkpoint == 0) {
-                cout << "Époque " << epoch << " | Loss: " << loss 
-                     << " | Accuracy: " << accuracy << "%" << endl;
-            }
-        
+                cout << "Époque " << epoch 
+                     << " | Loss: " << loss 
+                     << " | Accuracy: " << accuracy << "%"
+                     << " | lr: " << optimizer.current_learning_rate;
+
+                dump_metrics(epoch, loss, accuracy);
+            }           
     }
 }
 
@@ -177,6 +197,7 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y,
     int total_samples = inputs.size();
     
     for(int i = 0; i < total_samples; ++i){
+        std::cout << "\n-- Échantillon " << i << "/" << total_samples << std::endl;
         // Extract single input sample
         std::vector<std::vector<MatrixXd>> single_input = {{inputs[i]}};
         
@@ -231,6 +252,8 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y,
              << " (" << classes[ground_truth] << ")"
              << " | " << (predicted_class == ground_truth ? "CORRECT" : "WRONG") << endl;
     }
+
+    cout << "\n=== RÉSULTATS D'ÉVALUATION ===" << endl;
     
     // Calculate overall accuracy
     double accuracy = static_cast<double>(correct_predictions) / total_samples * 100.0;
@@ -242,4 +265,10 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y,
 void CNNModel::dump()
 {
     std::cout << "Hello world" << std::endl;
+}
+
+
+void CNNModel::dump_metrics(int epoch, double loss, double accuracy){
+    eval << "Époque " << epoch << " | Loss: " << loss 
+    << " | Accuracy: " << accuracy << "%" << endl;
 }

@@ -20,7 +20,11 @@ public:
     MatrixXd output;
     MatrixXd dinputs;
     MatrixXd dweights;
-    MatrixXd dbiases;
+    RowVectorXd dbiases;
+
+
+    MatrixXd weights_momentum;
+    RowVectorXd biases_momentum;
 
 
     DenseLayer(int n_inputs, int n_neurons);
@@ -76,9 +80,17 @@ public:
 class Optimizer_SGD{
 public:
     double learning_rate;
-    Optimizer_SGD(double learning_rate=1.0);
+    double current_learning_rate;
+    double decay=0.;
+    double iterations = 0.;
+    double momentum;
+
+    Optimizer_SGD(double learning_rate=1.0,double decay=.0, double momentum=0.);
+
+    void pre_update_params();
     void update_params(DenseLayer& layer);
     void update_params(ConvLayer &layer);
+    void post_update_params();
 };
 extern MatrixXd generateSyntheticData(int samples, int features, unsigned seed);
 

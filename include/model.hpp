@@ -3,10 +3,12 @@
 
 #include "convolution.hpp"
 #include "dense.hpp"
-
+#include <fstream>
 class CNNParameters {
 public:
     double learning_rate;
+    double decay;
+    double momentum;
     double epochs;
     int checkpoint;
     
@@ -85,8 +87,11 @@ public:
 
 
     double learning_rate;
+    double decay;
     double epochs;
     int checkpoint;
+    double momentum;
+    std::ofstream eval;
     
 
     CNNModel(CNNParameters& params);   
@@ -96,6 +101,7 @@ public:
     void fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y);
     void evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y, vector<string> &classes);
     void dump(); // every epoch % checkpoint save the model
+    void dump_metrics(int epoch, double loss, double accuracy);
     void load();
     // auto forward();
     // auto loss();
@@ -103,5 +109,5 @@ public:
     // auto update();
 };
 
-
+inline std::string metrics_file = R"(/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/eval.txt)";
 #endif // MODEL
