@@ -1,7 +1,7 @@
 # CNN
 Parallelisation d'un CNN
 
-Ce depot retrace mes travaux sur la parallelisation d'un CNN pour la detection d'images medicales
+Ce depot retrace mes travaux sur la parallelisation d'un CNN pour la classification d'images medicales
 - step 1 : CNN sequentiel 
 
 
