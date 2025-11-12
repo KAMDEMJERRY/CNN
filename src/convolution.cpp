@@ -33,10 +33,20 @@ MatrixXd convolution2D(MatrixXd Input, MatrixXd kernel, int padding, int stride)
 }
 
 // Implémentation de ConvLayer
-ConvLayer::ConvLayer(int in_size, int in_ch, int f_num, int f_size, int pad, int str) 
+ConvLayer::ConvLayer(int in_size, int in_ch, int f_num, int f_size, int pad, int str,
+                  double weight_regularizer_l1, double weight_regularizer_l2, 
+                  double bias_regularizer_l1, double bias_regularizer_l2
+
+) 
     : input_size(in_size), input_ch(in_ch), output_ch(f_num), filter_size(f_size), padding(pad), stride(str) 
 {
     output_size = (input_size - filter_size + 2 * padding) / stride + 1;
+
+    this->weight_regularizer_l1 = weight_regularizer_l1;
+    this->weight_regularizer_l2 = weight_regularizer_l2;
+    this->bias_regularizer_l1 = bias_regularizer_l1;
+    this->bias_regularizer_l2 = bias_regularizer_l2;
+
     // output_maps.resize(output_ch, MatrixXd::Zero(output_size, output_size));
     initialize(); 
 }
@@ -58,6 +68,8 @@ void ConvLayer::initialize() {
     biases = VectorXd::Zero(output_ch);
     biases_momentum = VectorXd::Zero(output_ch); 
 }
+
+
 
 #pragma omp
 void ConvLayer::forward(const std::vector<std::vector<MatrixXd>>& batch_input_maps){
@@ -165,6 +177,50 @@ std::vector<std::vector<MatrixXd>>& ConvLayer::backward(const std::vector<std::v
         }
     }
     
+
+    // Gradients sur la regularization
+    // L1 sur les filtres
+    if(weight_regularizer_l1 > 0){
+        std::vector<std::vector<MatrixXd>> dL1;
+        dL1.resize(output_ch);
+        for(int o_ch = 0; o_ch < output_ch; o_ch++) {
+            dL1[o_ch].resize(input_ch);
+            for(int i_ch = 0; i_ch < input_ch; i_ch++) {
+                dL1[o_ch][i_ch] = MatrixXd::Ones(filter_size, filter_size);
+                dL1[o_ch][i_ch] = (filters[o_ch][i_ch].array() < 0).select(
+                    Eigen::MatrixXd::Constant(filters[o_ch][i_ch].rows(), filters[o_ch][i_ch].cols(), -1.),
+                    Eigen::MatrixXd::Constant(filters[o_ch][i_ch].rows(), filters[o_ch][i_ch].cols(), 1.)
+                );
+                dweights[o_ch][i_ch] = dweights[o_ch][i_ch].array() + weight_regularizer_l1 * dL1[o_ch][i_ch].array();
+            }
+        }
+    }
+
+    // L2 sur les filtres
+    if(weight_regularizer_l2 > 0){
+        for(int o_ch = 0; o_ch < output_ch; o_ch++) {
+            for(int i_ch = 0; i_ch < input_ch; i_ch++) {
+                dweights[o_ch][i_ch] = dweights[o_ch][i_ch].array() + 2 * weight_regularizer_l1 * filters[o_ch][i_ch].array();
+            }
+        }
+    }
+
+    // L1 sur les biais
+    if(bias_regularizer_l1 > 0){
+        VectorXd dL1 = VectorXd::Ones(biases.size());
+        dL1 = (biases.array() < 0).select(
+            Eigen::VectorXd::Constant(biases.size(), -1.),
+            Eigen::VectorXd::Constant(biases.size(), 1.)
+        );
+        dbiases = dbiases.array() +  bias_regularizer_l1 * dL1.array();
+    }
+    
+    // L2 sur les biais
+    if(bias_regularizer_l2 > 0){
+        dbiases = dbiases.array() + 2 * bias_regularizer_l2 * biases.array();
+    }
+
+
 
     // 5. Calculer dinputs (CONVOLUTION TRANSPOSÉE)
     for(int in_i = 0; in_i < n_in; in_i++) {

@@ -1,0 +1,47 @@
+=== PHASE D'ÉVALUATION ===
+
+-- Échantillon 0/10
+Sample 0:
+  Predicted class: 0 (MONOCYTE) | Probability: 45.611% | Ground truth: 1 (LYMPHOCYTE) | WRONG
+
+-- Échantillon 1/10
+Sample 1:
+  Predicted class: 0 (MONOCYTE) | Probability: 88.1832% | Ground truth: 3 (NEUTROPHIL) | WRONG
+
+-- Échantillon 2/10
+Sample 2:
+  Predicted class: 1 (LYMPHOCYTE) | Probability: 99.9993% | Ground truth: 1 (LYMPHOCYTE) | CORRECT
+
+-- Échantillon 3/10
+Sample 3:
+  Predicted class: 3 (NEUTROPHIL) | Probability: 97.7227% | Ground truth: 3 (NEUTROPHIL) | CORRECT
+
+-- Échantillon 4/10
+Sample 4:
+  Predicted class: 2 (EOSINOPHIL) | Probability: 83.4512% | Ground truth: 0 (MONOCYTE) | WRONG
+
+-- Échantillon 5/10
+Sample 5:
+  Predicted class: 2 (EOSINOPHIL) | Probability: 99.8333% | Ground truth: 0 (MONOCYTE) | WRONG
+
+-- Échantillon 6/10
+Sample 6:
+  Predicted class: 0 (MONOCYTE) | Probability: 81.4913% | Ground truth: 3 (NEUTROPHIL) | WRONG
+
+-- Échantillon 7/10
+Sample 7:
+  Predicted class: 1 (LYMPHOCYTE) | Probability: 52.8257% | Ground truth: 3 (NEUTROPHIL) | WRONG
+
+-- Échantillon 8/10
+Sample 8:
+  Predicted class: 2 (EOSINOPHIL) | Probability: 95.2639% | Ground truth: 1 (LYMPHOCYTE) | WRONG
+
+-- Échantillon 9/10
+Sample 9:
+  Predicted class: 1 (LYMPHOCYTE) | Probability: 98.2688% | Ground truth: 1 (LYMPHOCYTE) | CORRECT
+
+=== RÉSULTATS D'ÉVALUATION ===
+
+=== RÉSULTATS FINAUX ===
+Accuracy globale: 30%
+Correct: 3/10

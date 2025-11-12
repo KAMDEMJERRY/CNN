@@ -48,12 +48,22 @@ int main(int argc, char*argv[]) {
         // Définir les paramètres du modèle CNN
 
         CNNParameters params;
-        params.epochs = 100;
+        params.epochs = 50;
         params.learning_rate = 0.001;
         params.decay = 1e-4;
         params.momentum = 0.9;
         params.checkpoint = 1;  // Corrigé: checkpoints -> checkpoint
 
+        params.d_weight_regularizer_l1 = 0;
+        params.d_weight_regularizer_l2 = 1e-4;
+        params.d_bias_regularizer_l1 = 0;
+        params.d_bias_regularizer_l2 = 1e-4;
+
+        params.c_weight_regularizer_l1 = 0;
+        params.c_weight_regularizer_l2 = 1e-4;
+        params.c_bias_regularizer_l1 = 0;
+        params.c_bias_regularizer_l2 = 1e-4;
+        
         // Configuration Conv1
         params.conv1_inputsize = image_size;
         params.conv1_input_channel_number = input_channels;
@@ -110,7 +120,7 @@ int main(int argc, char*argv[]) {
             {
                 case 0:
                     cnn_model.fit(inputs_train, y_train);
-                    cnn_model.dump();
+                    // dump(cnn_model);
                     break;
                 case 1:
                     cnn_model.evaluate(inputs_test, y_test, imgDataset.classes);

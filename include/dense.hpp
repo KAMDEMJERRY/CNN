@@ -21,13 +21,23 @@ public:
     MatrixXd dinputs;
     MatrixXd dweights;
     RowVectorXd dbiases;
+    
+    double weight_regularizer_l1;
+    double weight_regularizer_l2;
+    double bias_regularizer_l1;
+    double bias_regularizer_l2;
 
 
     MatrixXd weights_momentum;
     RowVectorXd biases_momentum;
 
 
-    DenseLayer(int n_inputs, int n_neurons);
+    DenseLayer(int n_inputs, int n_neurons, 
+              double weight_regularizer_l1 = 0,
+              double weight_regularizer_l2 = 0,
+              double bias_regularizer_l1 = 0,
+              double bias_regularizer_l2 = 0
+    );
     DenseLayer(){};
     MatrixXd& forward(const MatrixXd& inputs);
     void backward(const MatrixXd& dvalues);
@@ -58,6 +68,9 @@ public:
     MatrixXd dinputs;
     VectorXd forward(const MatrixXd& y_pred, const MatrixXd& y) ;
     VectorXd forward(const MatrixXd& y_pred, const  VectorXd& y) ;
+    
+    double regularization_loss(const DenseLayer layer);
+    double regularization_loss(const ConvLayer layer);
     double calculate(const MatrixXd& output, const MatrixXd& y) ;
     double calculate(const MatrixXd& output, const  VectorXd& y) ;
     MatrixXd& backward(const MatrixXd& dvalues, const  VectorXd& y);

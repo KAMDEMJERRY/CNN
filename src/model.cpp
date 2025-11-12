@@ -37,6 +37,15 @@ CNNModel::CNNModel(CNNParameters& params)
 {
     decay = params.decay;
     momentum = params.momentum;
+    double d_weight_regularizer_l1 = params.d_weight_regularizer_l1;
+    double d_weight_regularizer_l2 = params.d_weight_regularizer_l2;
+    double d_bias_regularizer_l1 = params.d_weight_regularizer_l1;
+    double d_bias_regularizer_l2 = params.d_weight_regularizer_l2;
+
+    double c_weight_regularizer_l1 = params.c_weight_regularizer_l1;
+    double c_weight_regularizer_l2 = params.c_weight_regularizer_l2;
+    double c_bias_regularizer_l1 = params.c_weight_regularizer_l1;
+    double c_bias_regularizer_l2 = params.c_weight_regularizer_l2;
 }
 
 
@@ -81,6 +90,41 @@ void CNNModel::compile()
     dense1 = DenseLayer( input_size, params.dense2_inputsize);
     dense2 = DenseLayer( dense1.n_neurons, params.dense3_inputsize);
     dense3 = DenseLayer( dense2.n_neurons, params.dense4_inputsize);
+
+    // Regularization params
+
+    // Convolution Layers
+    conv1.weight_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv1.weight_regularizer_l2 = params.c_weight_regularizer_l2;
+    conv1.bias_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv1.bias_regularizer_l2 = params.c_weight_regularizer_l2;
+    
+    conv2.weight_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv2.weight_regularizer_l2 = params.c_weight_regularizer_l2;
+    conv2.bias_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv2.bias_regularizer_l2 = params.c_weight_regularizer_l2;
+    
+    conv3.weight_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv3.weight_regularizer_l2 = params.c_weight_regularizer_l2;
+    conv3.bias_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv3.bias_regularizer_l2 = params.c_weight_regularizer_l2;
+
+    // Dense Layers
+    dense1.weight_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense1.weight_regularizer_l2 = params.d_weight_regularizer_l2;
+    dense1.bias_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense1.bias_regularizer_l2 = params.d_weight_regularizer_l2;
+    
+    dense2.weight_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense2.weight_regularizer_l2 = params.d_weight_regularizer_l2;
+    dense2.bias_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense2.bias_regularizer_l2 = params.d_weight_regularizer_l2;
+    
+    dense3.weight_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense3.weight_regularizer_l2 = params.d_weight_regularizer_l2;
+    dense3.bias_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense3.bias_regularizer_l2 = params.d_weight_regularizer_l2;
+    
 
     learning_rate = params.learning_rate;
     momentum = params.momentum;
@@ -136,9 +180,12 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y)
             cout << "Après dense3: " << dense3.output.rows() << "x" << dense3.output.cols() << endl;
             
             // Calcul de la loss
-            double loss = loss_activation.forward(dense3.output, y);
+            double data_loss = loss_activation.forward(dense3.output, y);
+            double regularization_loss =  loss_activation.loss.regularization_loss(dense1) + loss_activation.loss.regularization_loss(dense2) + 
+                                     loss_activation.loss.regularization_loss(dense3) + loss_activation.loss.regularization_loss(conv1) + 
+                                     loss_activation.loss.regularization_loss(conv2) + loss_activation.loss.regularization_loss(conv3);
 
-
+            double loss = data_loss + regularization_loss;
 
             // Calcul de la précision toutes les 10 époques
             double accuracy = 0.0;
@@ -180,7 +227,9 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y)
             // Affichage des résultats
             if (epoch % params.checkpoint == 0) {
                 cout << "Époque " << epoch 
-                     << " | Loss: " << loss 
+                     << " | Loss: " << loss  << "("
+                     << "data_loss: " << data_loss << ", "
+                     << "reg_loss: " << regularization_loss << ") "
                      << " | Accuracy: " << accuracy << "%"
                      << " | lr: " << optimizer.current_learning_rate;
 
@@ -264,11 +313,23 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y,
 
 void CNNModel::dump()
 {
+    std::ofstream file_model("./model.bin", ios_base::binary); 
     std::cout << "Hello world" << std::endl;
+    // file_model.write(reinterpret_cast<char*>(this->leaning_rate), sizeof(this));
 }
+
+// CNNModel load(){
+//     CNNModel model;
+
+//     std::ifstream file_model("./model.bin", ios_base::binary);
+//     // file_model.read(reinterpret_cast<CNNModel>(model), sizeof(model));
+//     return model;
+// }
 
 
 void CNNModel::dump_metrics(int epoch, double loss, double accuracy){
     eval << "Époque " << epoch << " | Loss: " << loss 
     << " | Accuracy: " << accuracy << "%" << endl;
 }
+
+

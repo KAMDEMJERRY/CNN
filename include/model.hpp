@@ -10,7 +10,20 @@ public:
     double decay;
     double momentum;
     double epochs;
+
+    double d_weight_regularizer_l1 = 0;
+    double d_weight_regularizer_l2 = 0;
+    double d_bias_regularizer_l1 = 0;
+    double d_bias_regularizer_l2 = 0;
+
+    double c_weight_regularizer_l1 = 0;
+    double c_weight_regularizer_l2 = 0;
+    double c_bias_regularizer_l1 = 0;
+    double c_bias_regularizer_l2 = 0;
+    
     int checkpoint;
+
+
     
     // Conv parameters //Square kernels assumed
     int conv1_inputsize;
@@ -91,6 +104,16 @@ public:
     double epochs;
     int checkpoint;
     double momentum;
+    double d_weight_regularizer_l1 = 0;
+    double d_weight_regularizer_l2 = 0;
+    double d_bias_regularizer_l1 = 0;
+    double d_bias_regularizer_l2 = 0;
+
+    double c_weight_regularizer_l1 = 0;
+    double c_weight_regularizer_l2 = 0;
+    double c_bias_regularizer_l1 = 0;
+    double c_bias_regularizer_l2 = 0;
+
     std::ofstream eval;
     
 
@@ -100,9 +123,8 @@ public:
     void compile();
     void fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y);
     void evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y, vector<string> &classes);
-    void dump(); // every epoch % checkpoint save the model
+    void dump();
     void dump_metrics(int epoch, double loss, double accuracy);
-    void load();
     // auto forward();
     // auto loss();
     // auto backward();
@@ -111,3 +133,4 @@ public:
 
 inline std::string metrics_file = R"(/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/eval.txt)";
 #endif // MODEL
+
