@@ -48,7 +48,9 @@ MatrixXd generateSyntheticData(int samples, int features, unsigned seed = std::r
 // // Generate reproducible data with fixed seed
 // MatrixXd reproducibleData = generateSyntheticData(100, 5, 42);
 
-DenseLayer::DenseLayer(int n_inputs, int n_neurons)
+DenseLayer::DenseLayer(int n_inputs, int n_neurons, 
+                    double weight_regularizer_l1, double weight_regularizer_l2, 
+                    double bias_regularizer_l1, double bias_regularizer_l2)
 {
     DenseLayer::n_inputs = n_inputs;
     DenseLayer::n_neurons = n_neurons;
@@ -58,6 +60,12 @@ DenseLayer::DenseLayer(int n_inputs, int n_neurons)
     dweights = MatrixXd::Zero(n_inputs, n_neurons);
     dbiases = MatrixXd::Zero(1, n_neurons);
     
+    this->weight_regularizer_l1 = weight_regularizer_l1;
+    this->weight_regularizer_l2 = weight_regularizer_l2;
+    this->bias_regularizer_l1 = bias_regularizer_l1;
+    this->bias_regularizer_l2 = bias_regularizer_l2;
+
+
     weights_momentum = MatrixXd::Zero(weights.rows(), weights.cols());
     biases_momentum = RowVectorXd::Zero(biases.size());
 }
@@ -85,6 +93,39 @@ void DenseLayer::backward(const MatrixXd& dvalues){
         // dbiases: (1, n_neurons)
         this->dbiases = dvalues.colwise().sum(); // Somme sur les colonnes
         
+
+        // Gradients sur la regularization
+        // L1 on weights
+        if (weight_regularizer_l1 > 0){
+            MatrixXd dL1 = MatrixXd::Ones(weights.rows(), weights.cols());
+            dL1 = (weights.array() < 0).select(
+                Eigen::MatrixXd::Constant(weights.rows(), weights.cols(), -1.),
+                Eigen::MatrixXd::Constant(weights.rows(), weights.cols(), 1.)
+            );
+            dweights = dweights.array() + weight_regularizer_l1 * dL1.array();            
+        }
+        
+        // L2 on weights
+        if (weight_regularizer_l2 > 0){
+            dweights = dweights.array() + 2 * weight_regularizer_l2 * weights.array();            
+        }
+
+        // L1 on biases
+        if(bias_regularizer_l1 > 0){
+            RowVectorXd dL1 = RowVectorXd::Ones(biases.size());
+            dL1 = (biases.array() < 0).select(
+                Eigen::RowVectorXd::Constant(biases.size(), -1),
+                Eigen::RowVectorXd::Constant(biases.size(), 1)
+            );
+            dbiases = dbiases.array() +  bias_regularizer_l1 * dL1.array();
+        }
+
+        // L2 on biases
+        if(bias_regularizer_l2 > 0){
+            dbiases = dbiases.array() + 2 * bias_regularizer_l2 * biases.array();
+        }
+
+
         // 3. Gradients des inputs: dvalues * weights^T
         // dvalues: (batch_size, n_neurons)
         // weights: (n_inputs, n_neurons) -> transpose: (n_neurons, n_inputs)
@@ -156,6 +197,7 @@ MatrixXd& Activation_Softmax::forward(const MatrixXd& inputs){
     output = result.matrix();
     return output;
 }
+
 MatrixXd& Activation_Softmax::backward(const MatrixXd& dvalues){
     int N = dvalues.rows();
     int M = dvalues.cols();
@@ -188,6 +230,7 @@ VectorXd LossCategoricalCrossentropy::forward(const MatrixXd &y_pred, const Matr
    RowVectorXd neg_log_likelihoods = (correct_confidences.array().log()) * -1;
    return neg_log_likelihoods;
 }
+
 VectorXd LossCategoricalCrossentropy::forward(const MatrixXd& y_pred, const VectorXd& y){
     int samples = y_pred.rows();
 
@@ -200,6 +243,70 @@ VectorXd LossCategoricalCrossentropy::forward(const MatrixXd& y_pred, const Vect
 
    RowVectorXd neg_log_likelihoods = (correct_confidences.array().log()) * -1;
    return neg_log_likelihoods;
+}
+
+double LossCategoricalCrossentropy::regularization_loss(const DenseLayer layer)
+{
+    double regularization_loss = 0;
+
+    // L1 regularization - weights
+    // calculate only when factor greater than 0
+    if(layer.weight_regularizer_l1 > 0){
+        regularization_loss += layer.weight_regularizer_l1 * layer.weights.array().abs().array().sum();
+    }
+
+    // L2 regularization - weights
+    if(layer.weight_regularizer_l2 > 0){
+        regularization_loss += layer.weight_regularizer_l2 * layer.weights.array().square().array().sum();
+    }
+
+    // L1 regularization - biases
+    if(layer.bias_regularizer_l1 > 0){
+        regularization_loss += layer.weight_regularizer_l1 * layer.biases.array().abs().array().sum();
+    }
+
+    // L2 regularization - biases
+    if(layer.bias_regularizer_l2 > 0){
+        regularization_loss += layer.weight_regularizer_l2 * layer.biases.array().square().array().sum();
+    }
+   
+    return regularization_loss;
+}
+
+double LossCategoricalCrossentropy::regularization_loss(const ConvLayer layer)
+{
+    double regularization_loss;
+
+    // L1 regularization - weights
+    // calculate only when factor greater than 0
+    if(layer.weight_regularizer_l1 > 0){
+        for(int o_ch = 0; o_ch < layer.output_ch; o_ch++) {
+            for(int i_ch = 0; i_ch < layer.input_ch; i_ch++) {
+                regularization_loss += layer.weight_regularizer_l1 * layer.filters[o_ch][i_ch].array().abs().array().sum();
+            }
+        }
+    }
+
+    // L2 regularization - weights
+    if(layer.weight_regularizer_l2 > 0){
+        for(int o_ch = 0; o_ch < layer.output_ch; o_ch++) {
+            for(int i_ch = 0; i_ch < layer.input_ch; i_ch++) {
+                regularization_loss += layer.weight_regularizer_l2 * layer.filters[o_ch][i_ch].array().abs().array().sum();
+            }
+        }
+    }
+
+    // L1 regularization - biases
+    if(layer.bias_regularizer_l1 > 0){
+        regularization_loss += layer.weight_regularizer_l1 * layer.biases.array().abs().array().sum();
+    }
+
+    // L2 regularization - biases
+    if(layer.bias_regularizer_l2 > 0){
+        regularization_loss += layer.weight_regularizer_l2 * layer.biases.array().square().array().sum();
+    }
+
+    return regularization_loss;
 }
 
 double LossCategoricalCrossentropy::calculate(const MatrixXd& output, const MatrixXd& y){
