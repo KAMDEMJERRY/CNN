@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <utility>
 #include "model.hpp"
-#include <pqxx/pqxx>
 
 
 using namespace std;
@@ -52,7 +51,7 @@ int main(int argc, char*argv[]) {
         params.learning_rate = 0.001;
         params.decay = 1e-4;
         params.momentum = 0.9;
-        params.checkpoint = 1;  // Corrigé: checkpoints -> checkpoint
+        params.checkpoint = 5;  // Corrigé: checkpoints -> checkpoint
 
         params.d_weight_regularizer_l1 = 0;
         params.d_weight_regularizer_l2 = 1e-4;
@@ -67,14 +66,14 @@ int main(int argc, char*argv[]) {
         // Configuration Conv1
         params.conv1_inputsize = image_size;
         params.conv1_input_channel_number = input_channels;
-        params.conv1_filter_number = 8;
+        params.conv1_filter_number = 4;
         params.conv1_filter_size = 5;
         params.conv1_padding = 1;
         params.conv1_stride = 1;
         params.pool1_size = 2;
 
         // Configuration Conv2 (corrigé: input_channel_number devrait être 8, pas input_channels)
-        params.conv2_filter_number = 16;            // 16 filtres comme défini dans conv2
+        params.conv2_filter_number = 3; //16;            // 16 filtres comme défini dans conv2
         params.conv2_filter_size = 5;
         params.conv2_padding = 1;
         params.conv2_stride = 1;
@@ -83,7 +82,7 @@ int main(int argc, char*argv[]) {
 
         // Configuration Conv3 (si vous l'utilisez plus tard, sinon vous pouvez supprimer)
 
-        params.conv3_filter_number = 32;
+        params.conv3_filter_number = 5; //32;
         params.conv3_filter_size = 3;
         params.conv3_padding = 1;
         params.conv3_stride = 1;
@@ -91,8 +90,8 @@ int main(int argc, char*argv[]) {
         params.pool3_size = 2;
 
         // Configuration des couches denses
-        params.dense2_inputsize = 64;              // Sortie de dense1 = entrée de dense2
-        params.dense3_inputsize = 32;              // Sortie de dense2 = entrée de dense3
+        params.dense2_inputsize = 20; //64;              // Sortie de dense1 = entrée de dense2
+        params.dense3_inputsize = 10;              // Sortie de dense2 = entrée de dense3
         params.dense4_inputsize = imgDataset.classes.size(); // Sortie de dense3 = nombre de classes
 
         CNNModel cnn_model(params);

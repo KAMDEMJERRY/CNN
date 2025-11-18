@@ -3,6 +3,7 @@
 
 #include "convolution.hpp"
 #include "dense.hpp"
+#include "omp.hpp"
 #include <fstream>
 class CNNParameters {
 public:

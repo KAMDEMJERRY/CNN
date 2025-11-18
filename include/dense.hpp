@@ -6,6 +6,8 @@
 #include <random>
 #include "utils.hpp"
 #include "convolution.hpp"
+#include "omp.hpp"
+
 
 using namespace std;
 using namespace Eigen;

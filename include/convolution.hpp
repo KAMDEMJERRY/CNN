@@ -7,6 +7,8 @@
 #include <cmath>
 #include <Eigen/Dense>
 #include <stdexcept>
+#include "omp.hpp"
+
 
 using namespace Eigen;
 using namespace std;

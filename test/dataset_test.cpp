@@ -13,7 +13,7 @@ protected:
     void SetUp() override {
         // Initialisation des variables de test
         string dataset_path = "../../../dataset/bloodcellsub/images/TRAIN/";
-        dataset = ImageDataset(dataset_path);
+        dataset = ImageDataset(dataset_path, 220, "GRAY");
     }
 };
 

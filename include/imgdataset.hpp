@@ -13,6 +13,7 @@
 #include <random>
 #include <utility>
 #include <numeric> // for std::iota
+#include "omp.hpp"
 
 using namespace Eigen;
 using namespace std;
