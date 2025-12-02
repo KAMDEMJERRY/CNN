@@ -19,7 +19,7 @@ int main(int argc, char*argv[]) {
     try {
 
         cout << "=== CHARGEMENT DU DATASET ===" <<endl;
-        ImageDataset imgDataset(BASE_DATA_PATH, 220, "GRAY");   // RGB or GRAY
+        ImageDataset imgDataset(BASE_DATA_PATH, 28, "GRAY");   // RGB or GRAY
         imgDataset.split = 0.8; // 80% pour l'entraînement, 20% pour le test
         std::vector<std::vector<MatrixXd>> inputs_train  = imgDataset.getTrain().first;
         std::vector<std::vector<MatrixXd>> inputs_test  = imgDataset.getTest().first;
