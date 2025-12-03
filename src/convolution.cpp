@@ -80,7 +80,7 @@ void ConvLayer::forward(const std::vector<std::vector<MatrixXd>> &batch_input_ma
     int n_inputs = batch_input_maps.size();
     output_maps.clear();
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (int batch_i = 0; batch_i < n_inputs; batch_i++)
     { // pour chaque input
         const std::vector<MatrixXd> &input_maps_i = batch_input_maps[batch_i];
@@ -97,7 +97,7 @@ void ConvLayer::forward(const std::vector<std::vector<MatrixXd>> &batch_input_ma
         }
         try
         {
-            # pragma omp parallel for collapse(1)
+            // # pragma omp parallel for collapse(1)
             for (int oc = 0; oc < output_ch; ++oc)
             { // Pour chaque canaux de la sortie de l'input (chaque kernel de la couche de convolution),
                 for (int ic = 0; ic < input_ch; ++ic)

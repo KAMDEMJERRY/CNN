@@ -158,6 +158,7 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y)
 
             conv3.forward(pool2.output_maps);
             cout << "Après conv3: " << conv3.output_maps[0][0].rows() << "x" << conv3.output_maps[0][0].cols() << endl;
+
             conv3_activation.forward(conv3.output_maps);
             pool3.forward(conv3_activation.outputs);
             cout << "Après pool3: " << pool3.output_maps[0][0].rows() << "x" << pool3.output_maps[0][0].cols() << endl;
@@ -196,24 +197,44 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y)
             // Backward pass
             loss_activation.backward(loss_activation.output, y);
             dense3.backward(loss_activation.dinputs);
+            cout << "Apres dense3 backward: " << dense3.dinputs.rows() << "x" << dense3.dinputs.cols() << endl;
             
             activation2.backward(dense3.dinputs);
             dense2.backward(activation2.dinputs);
+            cout << "Apres dense2 backward: " << dense2.dinputs.rows() << "x" << dense2.dinputs.cols() << endl;
            
             activation1.backward(dense2.dinputs);
             dense1.backward(activation1.dinputs);
+            cout << "Apres dense1 backward: " << dense1.dinputs.rows() << "x" << dense1.dinputs.cols() << endl;
+
 
             pool3.backward(pool3.unflatten(dense1.dinputs));
+            cout << "Apres pool3 backward: " << pool3.dinput[0][0].rows() << "x" << pool3.dinput[0][0].cols() << endl;
+
             conv3_activation.backward(pool3.dinput);
+            // cout << "Apres conv3_activation backward: " << conv3_activation.dinputs[0][0].rows() << "x" << conv3_activation.dinputs[0][0].cols() << endl;
+            
             conv3.backward(conv3_activation.dinputs);
+            cout << "Apres conv3 backward: " << conv3.dinputs[0][0].rows() << "x" << conv3.dinputs[0][0].cols() << endl;
 
             pool2.backward(conv3.dinputs);
+            cout << "Apres pool2 backward: " << pool2.dinput[0][0].rows() << "x" << pool2.dinput[0][0].cols() << endl;
+
             conv2_activation.backward(pool2.dinput);
+            // cout << "Apres conv2_activation backward: " << conv2_activation.dinputs[0][0].rows() << "x" << conv2_activation.dinputs[0][0].cols() << endl;
+
             conv2.backward(conv2_activation.dinputs);
-          
+            cout << "Apres conv2 backward: " << conv2.dinputs[0][0].rows() << "x" << conv2.dinputs[0][0].cols() << endl;
+
+            
             pool1.backward(conv2.dinputs);
+            cout << "Apres pool1 backward: " << pool1.dinput[0][0].rows() << "x" << pool1.dinput[0][0].cols() << endl;
+
             conv1_activation.backward(pool1.dinput);
+            // cout << "Apres conv1_activation backward: " << conv1_activation.dinputs[0][0].rows() << "x" << conv1_activation.dinputs[0][0].cols() << endl;
+
             conv1.backward(pool1.dinput);
+            cout << "Apres conv1 backward: " << conv1.dinputs[0][0].rows() << "x" << conv1.dinputs[0][0].cols() << endl;
             
             // Mise à jour des poids
             optimizer.pre_update_params();
@@ -309,6 +330,61 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y,
     cout << "\n=== RÉSULTATS FINAUX ===" << endl;
     cout << "Accuracy globale: " << accuracy << "%" << endl;
     cout << "Correct: " << correct_predictions << "/" << total_samples << endl;
+}
+
+void CNNModel::predict(std::vector<std::vector<MatrixXd>> &inputs, vector<string> &classes)
+{
+     cout << "\n=== PHASE De Test ===" << endl;
+    
+    int total_samples = inputs.size();
+    
+    for(int i = 0; i < total_samples; ++i){
+        std::cout << "\n-- Échantillon " << i << "/" << total_samples << std::endl;
+        // Extract single input sample
+        std::vector<std::vector<MatrixXd>> single_input = {{inputs[i]}};
+        
+        // Forward pass for this sample
+        conv1.forward(single_input);
+        conv1_activation.forward(conv1.output_maps);
+        pool1.forward(conv1.output_maps);
+        conv2.forward(pool1.output_maps);
+        conv2_activation.forward(conv2.output_maps);
+        pool2.forward(conv2.output_maps);    
+        conv3.forward(pool2.output_maps);
+        conv3_activation.forward(conv3.output_maps);
+        pool3.forward(conv3.output_maps);     
+
+        MatrixXd X = pool3.flatten();
+        dense1.forward(X);
+        activation1.forward(dense1.output);
+        dense2.forward(activation1.output);     
+        activation2.forward(dense2.output);
+        dense3.forward(activation2.output);
+        
+        // Apply softmax manually to get probabilities
+        MatrixXd logits = dense3.output;
+        MatrixXd exp_logits = logits.array().exp();
+        double sum_exp = exp_logits.sum();
+        MatrixXd output_probs = exp_logits / sum_exp;
+        
+        // Find predicted class
+        int predicted_class = 0;
+        double max_prob = output_probs(0, 0);
+        for(int j = 1; j < output_probs.cols(); ++j) {
+            if(output_probs(0, j) > max_prob) {
+                max_prob = output_probs(0, j);
+                predicted_class = j;
+            }
+        }
+        
+        
+        
+        // Log the prediction details
+        cout << "  Predicted class: " << predicted_class 
+             << " (" << classes[predicted_class] << ")"
+             << " | Probability: " << max_prob * 100 << "%" 
+             << endl;
+    }
 }
 
 void CNNModel::dump()

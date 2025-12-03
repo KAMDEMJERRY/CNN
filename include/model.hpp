@@ -11,6 +11,8 @@ public:
     double decay;
     double momentum;
     double epochs;
+    double iterations;
+    double batch_size;
 
     double d_weight_regularizer_l1 = 0;
     double d_weight_regularizer_l2 = 0;
@@ -99,7 +101,6 @@ public:
     Optimizer_SGD optimizer;   
 
 
-
     double learning_rate;
     double decay;
     double epochs;
@@ -124,6 +125,7 @@ public:
     void compile();
     void fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y);
     void evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y, vector<string> &classes);
+    void predict(std::vector<std::vector<MatrixXd>> &inputs, vector<string> &classes);
     void dump();
     void dump_metrics(int epoch, double loss, double accuracy);
     // auto forward();

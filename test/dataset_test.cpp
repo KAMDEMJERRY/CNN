@@ -15,6 +15,31 @@ protected:
         string dataset_path = "../../../dataset/bloodcellsub/images/TRAIN/";
         dataset = ImageDataset(dataset_path, 220, "GRAY");
     }
+    
+    bool checkNoNaN(const vector<vector<MatrixXd>>& images) {
+        for (const auto& image_channels : images) {
+            for (const auto& channel : image_channels) {
+                if (channel.hasNaN()) {  // Méthode Eigen
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    size_t countNaN(const vector<vector<MatrixXd>>& images) {
+        size_t count = 0;
+        for (const auto& image_channels : images) {
+            for (const auto& channel : image_channels) {
+                for (int i = 0; i < channel.size(); ++i) {
+                    if (std::isnan(*(channel.data() + i))) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return count;
+    }
 };
 
 TEST_F(ImageDatasetTest, LoadDataset) {
@@ -119,7 +144,7 @@ TEST_F(ImageDatasetTest, ImageDimensions) {
     vector<vector<MatrixXd>> images = dataset.getX();
     for (const auto& image_channels : images) {
         // Vérifier qu'il y a 3 canaux (RGB)
-        EXPECT_EQ(image_channels.size(), 3);
+        EXPECT_EQ(image_channels.size(), dataset.channels);
         
         for (const auto& channel : image_channels) {
             // Vérifier les dimensions de chaque canal
@@ -215,8 +240,20 @@ TEST_F(ImageDatasetTest, LoaderIntegration) {
     
     // Vérifier que les dimensions correspondent
     if (!dataset.images.empty()) {
-        EXPECT_EQ(dataset.images[0].size(), 3); // 3 canaux RGB
+        EXPECT_EQ(dataset.images[0].size(), dataset.channels); // 3 canaux RGB
         EXPECT_EQ(dataset.images[0][0].rows(), dataset.image_size);
         EXPECT_EQ(dataset.images[0][0].cols(), dataset.image_size);
     }
+}
+
+
+TEST_F(ImageDatasetTest, NoNaNUsingUtility) {
+    vector<vector<MatrixXd>> images = dataset.getX();
+    
+    // Vérification simple
+    EXPECT_TRUE(checkNoNaN(images)) << "Des NaN ont été détectés dans les images";
+    
+    // Ou vérification avec comptage
+    size_t nan_count = countNaN(images);
+    EXPECT_EQ(nan_count, 0) << "Trouvé " << nan_count << " valeurs NaN";
 }

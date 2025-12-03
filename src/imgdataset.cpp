@@ -5,10 +5,9 @@ String BASE_DATA_PATH = "../../../dataset/bloodcellsub/images/TRAIN/";
 vector<String> class_path = {"EOSINOPHIL", "LYMPHOCYTE", "MONOCYTE", "NEUTROPHIL"};
 
 
-
 ImageDataset::ImageDataset(string dataset_path, int img_size, string color_mode) : loader(dataset_path, img_size ,color_mode), image_size(img_size){
     images = loader.getImages();
-    images = normalize();
+    // images = normalize();
     labels = loader.getLabels();
     classes = loader.getClasses();
     ordinalEncoding(classes, labels);
@@ -35,6 +34,7 @@ std::vector<std::vector<MatrixXd>> ImageDataset::normalize(){
             meanImg[can] += images[im][can];
         }
         meanImg[can] /= N;
+        // std::cout << "normalize mean" << meanImg[can] << std::endl;
     }
 
     for(int can = 0; can < M; can++){
@@ -43,11 +43,14 @@ std::vector<std::vector<MatrixXd>> ImageDataset::normalize(){
             stdImg[can] += diff.cwiseProduct(diff); // élément-wise square
         }
         stdImg[can] = (stdImg[can] / N).cwiseSqrt();
+        // std::cout << "normalize std" << stdImg[can] << std::endl;
+    
     }
 
     for(int im = 0; im < N; im++){
         for(int can = 0; can < M; can++){
             images[im][can] = (images[im][can] - meanImg[can]).cwiseQuotient(stdImg[can]);
+            // std::cout << "images["<< im << ", " << can << "] : " << images[im][can] << std::endl;
         }
     }
 
@@ -73,20 +76,6 @@ VectorXi ImageDataset::ordinalEncoding(vector<string> &classes, vector<string> &
     return encoded_labels;
 }
 
-// vector<MatrixXd> ImageDataset::getX(){
-//     return images;
-// }
-
-// vector<string> ImageDataset::getY(){
-//     return labels;
-// }
-
-// vector<int> ImageDataset::getY_encoded(){
-//     return encoded_labels;
-// }
-
-
-
 ImageDatasetLoader::ImageDatasetLoader(string dataset_path, int img_size, string color_mode):dataset_path(dataset_path), color_mode(color_mode), image_width(img_size), image_height(img_size)
 {
 
@@ -94,7 +83,6 @@ ImageDatasetLoader::ImageDatasetLoader(string dataset_path, int img_size, string
     
 }
 
-// Implémentation de ImageDatasetLoader
 vector<MatrixXd> ImageDatasetLoader::loadImage(string image_path, int target_height, int target_width) {
 
     assert(color_mode == "RGB" || color_mode == "GRAY" && "Color mode must be 'RGB' or 'GRAY'");
@@ -171,7 +159,6 @@ vector<MatrixXd> ImageDatasetLoader::loadImage(string image_path, int target_hei
 
 }
 
-
 void ImageDatasetLoader::loadDataset( int target_height, int target_width)
 {
     this->dataset_path = dataset_path;
@@ -190,7 +177,6 @@ void ImageDatasetLoader::loadDataset( int target_height, int target_width)
         string classe = cls.substr(cls.find_last_of("/\\") + 1);
         classes.push_back(classe);
         fs::path class_dir = fs::path(dataset_path) / classe;
-        // std::cout << "Loading images for class: " << classe <<  " at dir path: " << class_dir << std::endl;
 
         vector<string> class_image_paths = getJpegFiles(class_dir.string());
         
@@ -204,23 +190,21 @@ void ImageDatasetLoader::loadDataset( int target_height, int target_width)
             }
         }
     }
-    // std::cout << "Dataset loaded. Total images: " << images.size() << std::endl;
 }
 
-
-
-
-
 const vector<vector<MatrixXd>>& ImageDatasetLoader::getImages() const { return images; }
+
 const vector<string>& ImageDatasetLoader::getLabels() const { return labels; }
+
 const std::vector<string> &ImageDatasetLoader::getClasses() const
 {
     return this->classes;
 }
+
 int ImageDatasetLoader::getImageHeight() const { return image_height; }
+
 int ImageDatasetLoader::getImageWidth() const { return image_width; }
 
-// Implémentation de ImageUtils
 void ImageUtils::normalizeDataset(vector<MatrixXd>& images) {
     if (images.empty()) return;
     
@@ -256,7 +240,6 @@ MatrixXd ImageUtils::cropImage(const MatrixXd& image, int start_row, int start_c
     return image.block(start_row, start_col, height, width);
 }
 
-// Implémentation des fonctions
 std::vector<std::string> getJpegFiles(const std::string& directoryPath) {
     std::vector<std::string> jpegFiles;
     try {
@@ -286,8 +269,6 @@ std::vector<std::string> getDirectoriesInDirectory(const fs::path& directoryPath
     }
     return filePaths;
 }
-
-// 
 
 void ImageDataset::shuffle_dataset()
 {
@@ -477,61 +458,3 @@ void ImageDatasetLoader::afficherImageEigenNormalisee(const Eigen::MatrixXd& r, 
         std::cerr << "Erreur: " << e.what() << std::endl;
     }
 }
-// // Implémentation du template
-// template<typename T1, typename T2>
-// void shuffle_two_vectors(T1& vec1, T2& vec2) {
-//     if (vec1.size() != vec2.size()) {
-//         throw std::invalid_argument("Vectors must have the same size");
-//     }
-    
-//     std::vector<size_t> indices(vec1.size());
-//     for (size_t i = 0; i < indices.size(); ++i) {
-//         indices[i] = i;
-//     }
-    
-//     std::random_device rd;
-//     std::mt19937 gen(rd());
-//     std::shuffle(indices.begin(), indices.end(), gen);
-    
-//     T1 temp_vec1(vec1.size());
-//     T2 temp_vec2(vec2.size());
-    
-//     for (size_t i = 0; i < indices.size(); ++i) {
-//         temp_vec1[i] = vec1[indices[i]];
-//         temp_vec2[i] = vec2[indices[i]];
-//     }
-    
-//     vec1 = std::move(temp_vec1);
-//     vec2 = std::move(temp_vec2);
-// }
-
-// // Instanciation explicite du template pour les types couramment utilisés
-// template void shuffle_two_vectors<vector<MatrixXd>, vector<int>>(vector<MatrixXd>&, vector<int>&);
-// template void shuffle_two_vectors<vector<MatrixXd>, vector<string>>(vector<MatrixXd>&, vector<string>&);
-// template void shuffle_two_vectors<vector<int>, vector<int>>(vector<int>&, vector<int>&);
-// template void shuffle_two_vectors<vector<string>, vector<string>>(vector<string>&, vector<string>&);
-
-// // Implémentation de la fonction principale
-// ImageDataset loadDataSet() {
-    
-//     ImageDatasetLoader loader;
-//     vector<string> image_labels;
-//     vector<string> image_paths;
-  
-//     for(String path : class_path) {
-//         auto class_image = getJpegFiles(BASE_DATA_PATH + path);
-//         for(size_t i = 0; i < class_image.size(); i++){
-//             image_labels.push_back(path);
-//         }
-//         image_paths.insert(image_paths.end(), class_image.begin(), class_image.end());
-//     }
-    
-//     try { 
-//         loader.loadDataset(image_paths, image_labels, 128, 128);
-//     } catch (const exception& e) {
-//         cerr << "Error: " << e.what() << endl;
-//     }
-    
-//     ImageDataset dataset(class_path, loader.getImages(), image_labels);
-//     return dataset;
-// }

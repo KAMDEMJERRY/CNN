@@ -44,6 +44,7 @@ public:
     MatrixXd& forward(const MatrixXd& inputs);
     void backward(const MatrixXd& dvalues);
     const MatrixXd& getOutput();
+    
 
 };
 class Activation_ReLU{

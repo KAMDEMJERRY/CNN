@@ -89,7 +89,7 @@ public:
     ImageDataset(
         string dataset_path,
         int img_size,
-        string color_mode = "GARY"
+        string color_mode = "GRAY"
     );
     std::vector<std::vector<MatrixXd>> normalize();
     ImageDataset() = default;
