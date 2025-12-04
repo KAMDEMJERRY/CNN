@@ -1,5 +1,8 @@
 #include "utils.hpp"
-
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <unordered_map>
 MatrixXd one_hot(const VectorXd& y, int num_labels){
     int uniq = 0;
     int n_samples = y.size();
@@ -102,10 +105,7 @@ void logCNNArchitecture(const ImageDataset& imgDataset,
 
 
 
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <unordered_map>
+
 
 std::unordered_map<std::string, std::string> loadEnvFile(const std::string& filename = ".env") {
     std::unordered_map<std::string, std::string> env;
@@ -131,6 +131,10 @@ std::unordered_map<std::string, std::string> loadEnvFile(const std::string& file
     }
     
     return env;
+}
+
+std::string getFileName(){
+
 }
 
 // Utilisation

@@ -1,32 +1,43 @@
 #include "model.hpp"
+#include "model_repo.hpp"
 
-double calculate_accuracy(const MatrixXd& predictions, const VectorXd& true_labels) {
+// #include <filesystem>
+// #include <iostream>
+
+namespace fs = std::filesystem;
+
+double calculate_accuracy(const MatrixXd &predictions, const VectorXd &true_labels)
+{
     int correct = 0;
     int n_samples = predictions.rows();
-    
-    for (int i = 0; i < n_samples; ++i) {
+
+    for (int i = 0; i < n_samples; ++i)
+    {
         // Trouver la classe prédite (indice avec la plus haute probabilité)
         int predicted_class = 0;
         double max_prob = predictions(i, 0);
-        for (int j = 1; j < predictions.cols(); ++j) {
-            if (predictions(i, j) > max_prob) {
+        for (int j = 1; j < predictions.cols(); ++j)
+        {
+            if (predictions(i, j) > max_prob)
+            {
                 max_prob = predictions(i, j);
                 predicted_class = j;
             }
         }
-        
+
         // Vérifier si la prédiction est correcte
-        if (predicted_class == static_cast<int>(true_labels(i))) {
+        if (predicted_class == static_cast<int>(true_labels(i)))
+        {
             correct++;
         }
     }
-    
+
     return static_cast<double>(correct) / n_samples * 100.0;
 }
 
-CNNModel::CNNModel(CNNParameters& params) 
+CNNModel::CNNModel(CNNParameters &params)
     : params(params),
-      conv1(), conv2(), conv3(),  // You'll need to add default constructors to your layer classes
+      conv1(), conv2(), conv3(), // You'll need to add default constructors to your layer classes
       pool1(), pool2(), pool3(),
       dense1(), dense2(), dense3(),
       conv1_activation(), conv2_activation(), conv3_activation(),
@@ -48,19 +59,60 @@ CNNModel::CNNModel(CNNParameters& params)
     double c_bias_regularizer_l2 = params.c_weight_regularizer_l2;
 }
 
+CNNModel::CNNModel() {}
 
-CNNModel::CNNModel(){}
 
-void CNNModel::compile() 
+void CNNModel::sethyperparams(CNNParameters &params){
+    this->params = params;
+  // Convolution Layers
+    conv1.weight_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv1.weight_regularizer_l2 = params.c_weight_regularizer_l2;
+    conv1.bias_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv1.bias_regularizer_l2 = params.c_weight_regularizer_l2;
+
+    conv2.weight_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv2.weight_regularizer_l2 = params.c_weight_regularizer_l2;
+    conv2.bias_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv2.bias_regularizer_l2 = params.c_weight_regularizer_l2;
+
+    conv3.weight_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv3.weight_regularizer_l2 = params.c_weight_regularizer_l2;
+    conv3.bias_regularizer_l1 = params.c_weight_regularizer_l1;
+    conv3.bias_regularizer_l2 = params.c_weight_regularizer_l2;
+
+    // Dense Layers
+    dense1.weight_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense1.weight_regularizer_l2 = params.d_weight_regularizer_l2;
+    dense1.bias_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense1.bias_regularizer_l2 = params.d_weight_regularizer_l2;
+
+    dense2.weight_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense2.weight_regularizer_l2 = params.d_weight_regularizer_l2;
+    dense2.bias_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense2.bias_regularizer_l2 = params.d_weight_regularizer_l2;
+
+    dense3.weight_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense3.weight_regularizer_l2 = params.d_weight_regularizer_l2;
+    dense3.bias_regularizer_l1 = params.d_weight_regularizer_l1;
+    dense3.bias_regularizer_l2 = params.d_weight_regularizer_l2;
+
+    learning_rate = params.learning_rate;
+    momentum = params.momentum;
+    decay = params.decay;
+    epochs = params.epochs;
+    checkpoint = params.checkpoint;
+}
+
+void CNNModel::compile()
 {
-    conv1 = ConvLayer(params.conv1_inputsize, //conv1.inputsize
+    conv1 = ConvLayer(params.conv1_inputsize,            // conv1.inputsize
                       params.conv1_input_channel_number, // conv1_number of channel of an input
-                      params.conv1_filter_number, // conv1.number of filter
-                      params.conv1_filter_size, // conv1_size of a filter
-                      params.conv1_stride, // conv1_stride
-                      params.conv1_padding); // conv1_padding
+                      params.conv1_filter_number,        // conv1.number of filter
+                      params.conv1_filter_size,          // conv1_size of a filter
+                      params.conv1_stride,               // conv1_stride
+                      params.conv1_padding);             // conv1_padding
 
-    pool1 = PoolLayer(conv1.output_size, //pool1_size
+    pool1 = PoolLayer(conv1.output_size, // pool1_size
                       conv1.output_ch,
                       params.pool1_size);
 
@@ -72,11 +124,11 @@ void CNNModel::compile()
                       params.conv2_padding);
 
     pool2 = PoolLayer(conv2.output_size,
-                        conv2.output_ch, // because output channels of conv2 = input channels of pool2
-                        params.pool2_size);
+                      conv2.output_ch, // because output channels of conv2 = input channels of pool2
+                      params.pool2_size);
 
     conv3 = ConvLayer(pool2.output_size,
-                      pool2.input_ch,  //input_ch == output_ch
+                      pool2.input_ch, // input_ch == output_ch
                       params.conv3_filter_number,
                       params.conv3_filter_size,
                       params.conv3_stride,
@@ -85,11 +137,11 @@ void CNNModel::compile()
     pool3 = PoolLayer(conv3.output_size,
                       conv3.output_ch, // because output channels of conv3 = input channels of pool3
                       params.pool3_size);
-    
+
     int input_size = std::pow(pool3.output_size, 2) * pool3.input_ch;
-    dense1 = DenseLayer( input_size, params.dense2_inputsize);
-    dense2 = DenseLayer( dense1.n_neurons, params.dense3_inputsize);
-    dense3 = DenseLayer( dense2.n_neurons, params.dense4_inputsize);
+    dense1 = DenseLayer(input_size, params.dense2_inputsize);
+    dense2 = DenseLayer(dense1.n_neurons, params.dense3_inputsize);
+    dense3 = DenseLayer(dense2.n_neurons, params.dense4_inputsize);
 
     // Regularization params
 
@@ -98,12 +150,12 @@ void CNNModel::compile()
     conv1.weight_regularizer_l2 = params.c_weight_regularizer_l2;
     conv1.bias_regularizer_l1 = params.c_weight_regularizer_l1;
     conv1.bias_regularizer_l2 = params.c_weight_regularizer_l2;
-    
+
     conv2.weight_regularizer_l1 = params.c_weight_regularizer_l1;
     conv2.weight_regularizer_l2 = params.c_weight_regularizer_l2;
     conv2.bias_regularizer_l1 = params.c_weight_regularizer_l1;
     conv2.bias_regularizer_l2 = params.c_weight_regularizer_l2;
-    
+
     conv3.weight_regularizer_l1 = params.c_weight_regularizer_l1;
     conv3.weight_regularizer_l2 = params.c_weight_regularizer_l2;
     conv3.bias_regularizer_l1 = params.c_weight_regularizer_l1;
@@ -114,17 +166,16 @@ void CNNModel::compile()
     dense1.weight_regularizer_l2 = params.d_weight_regularizer_l2;
     dense1.bias_regularizer_l1 = params.d_weight_regularizer_l1;
     dense1.bias_regularizer_l2 = params.d_weight_regularizer_l2;
-    
+
     dense2.weight_regularizer_l1 = params.d_weight_regularizer_l1;
     dense2.weight_regularizer_l2 = params.d_weight_regularizer_l2;
     dense2.bias_regularizer_l1 = params.d_weight_regularizer_l1;
     dense2.bias_regularizer_l2 = params.d_weight_regularizer_l2;
-    
+
     dense3.weight_regularizer_l1 = params.d_weight_regularizer_l1;
     dense3.weight_regularizer_l2 = params.d_weight_regularizer_l2;
     dense3.bias_regularizer_l1 = params.d_weight_regularizer_l1;
     dense3.bias_regularizer_l2 = params.d_weight_regularizer_l2;
-    
 
     learning_rate = params.learning_rate;
     momentum = params.momentum;
@@ -133,198 +184,203 @@ void CNNModel::compile()
     checkpoint = params.checkpoint;
 }
 
-void CNNModel::fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y)
+void CNNModel::fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y)
 {
-    
+
     cout << "Taille d'entrée: " << inputs[0][0].rows() << "x" << inputs[0][0].cols() << endl;
 
     cout << "\n=== PHASE D'ENTRAÎNEMENT ===" << endl;
-    for(int epoch = 0; epoch < epochs; ++epoch){
-     
-          // Forward pass
-            cout << "\nEpoch :" << epoch << "/" << epochs << "\n";
-            conv1.forward(inputs);
-            cout << "Après conv1: " << conv1.output_maps[0][0].rows() << "x" << conv1.output_maps[0][0].cols() << endl;
-            conv1_activation.forward(conv1.output_maps);
-        
-            pool1.forward(conv1_activation.outputs);
-            cout << "Après pool1: " << pool1.output_maps[0][0].rows() << "x" << pool1.output_maps[0][0].cols() << endl;
-            
-            conv2.forward(pool1.output_maps);
-            cout << "Après conv2: " << conv2.output_maps[0][0].rows() << "x" << conv2.output_maps[0][0].cols() << endl;
-            conv2_activation.forward(conv2.output_maps);
-            pool2.forward(conv2_activation.outputs);
-            cout << "Après pool2: " << pool2.output_maps[0][0].rows() << "x" << pool2.output_maps[0][0].cols() << endl;
+    for (int epoch = 0; epoch < epochs; ++epoch)
+    {
 
-            conv3.forward(pool2.output_maps);
-            cout << "Après conv3: " << conv3.output_maps[0][0].rows() << "x" << conv3.output_maps[0][0].cols() << endl;
+        // Forward pass
+        cout << "\nEpoch :" << epoch << "/" << epochs << "\n";
+        conv1.forward(inputs);
+        cout << "Après conv1: " << conv1.output_maps[0][0].rows() << "x" << conv1.output_maps[0][0].cols() << endl;
+        conv1_activation.forward(conv1.output_maps);
 
-            conv3_activation.forward(conv3.output_maps);
-            pool3.forward(conv3_activation.outputs);
-            cout << "Après pool3: " << pool3.output_maps[0][0].rows() << "x" << pool3.output_maps[0][0].cols() << endl;
+        pool1.forward(conv1_activation.outputs);
+        cout << "Après pool1: " << pool1.output_maps[0][0].rows() << "x" << pool1.output_maps[0][0].cols() << endl;
 
-            MatrixXd X;
-            X = pool3.flatten();
-            cout << "Après Flatten: " << X.rows() << "x" << X.cols() << endl;
+        conv2.forward(pool1.output_maps);
+        cout << "Après conv2: " << conv2.output_maps[0][0].rows() << "x" << conv2.output_maps[0][0].cols() << endl;
+        conv2_activation.forward(conv2.output_maps);
+        pool2.forward(conv2_activation.outputs);
+        cout << "Après pool2: " << pool2.output_maps[0][0].rows() << "x" << pool2.output_maps[0][0].cols() << endl;
 
-            dense1.forward(X);
-            cout << "Après dense1: " << dense1.output.rows() << "x" << dense1.output.cols() << endl;
-            
-            activation1.forward(dense1.output);
-            
-            dense2.forward(activation1.output);     
-            cout << "Après dense2: " << dense2.output.rows() << "x" << dense2.output.cols() << endl;
-            
-            activation2.forward(dense2.output);
-            
-            dense3.forward(activation2.output);
-            cout << "Après dense3: " << dense3.output.rows() << "x" << dense3.output.cols() << endl;
-            
-            // Calcul de la loss
-            double data_loss = loss_activation.forward(dense3.output, y);
-            double regularization_loss =  loss_activation.loss.regularization_loss(dense1) + loss_activation.loss.regularization_loss(dense2) + 
-                                     loss_activation.loss.regularization_loss(dense3) + loss_activation.loss.regularization_loss(conv1) + 
+        conv3.forward(pool2.output_maps);
+        cout << "Après conv3: " << conv3.output_maps[0][0].rows() << "x" << conv3.output_maps[0][0].cols() << endl;
+
+        conv3_activation.forward(conv3.output_maps);
+        pool3.forward(conv3_activation.outputs);
+        cout << "Après pool3: " << pool3.output_maps[0][0].rows() << "x" << pool3.output_maps[0][0].cols() << endl;
+
+        MatrixXd X;
+        X = pool3.flatten();
+        cout << "Après Flatten: " << X.rows() << "x" << X.cols() << endl;
+
+        dense1.forward(X);
+        cout << "Après dense1: " << dense1.output.rows() << "x" << dense1.output.cols() << endl;
+
+        activation1.forward(dense1.output);
+
+        dense2.forward(activation1.output);
+        cout << "Après dense2: " << dense2.output.rows() << "x" << dense2.output.cols() << endl;
+
+        activation2.forward(dense2.output);
+
+        dense3.forward(activation2.output);
+        cout << "Après dense3: " << dense3.output.rows() << "x" << dense3.output.cols() << endl;
+
+        // Calcul de la loss
+        double data_loss = loss_activation.forward(dense3.output, y);
+        double regularization_loss = loss_activation.loss.regularization_loss(dense1) + loss_activation.loss.regularization_loss(dense2) +
+                                     loss_activation.loss.regularization_loss(dense3) + loss_activation.loss.regularization_loss(conv1) +
                                      loss_activation.loss.regularization_loss(conv2) + loss_activation.loss.regularization_loss(conv3);
 
-            double loss = data_loss + regularization_loss;
+        double loss = data_loss + regularization_loss;
 
-            // Calcul de la précision toutes les 10 époques
-            double accuracy = 0.0;
-            if (epoch % params.checkpoint == 0) {
-                accuracy = calculate_accuracy(loss_activation.output, y);
-            }
-            
-            // Backward pass
-            loss_activation.backward(loss_activation.output, y);
-            dense3.backward(loss_activation.dinputs);
-            cout << "Apres dense3 backward: " << dense3.dinputs.rows() << "x" << dense3.dinputs.cols() << endl;
-            
-            activation2.backward(dense3.dinputs);
-            dense2.backward(activation2.dinputs);
-            cout << "Apres dense2 backward: " << dense2.dinputs.rows() << "x" << dense2.dinputs.cols() << endl;
-           
-            activation1.backward(dense2.dinputs);
-            dense1.backward(activation1.dinputs);
-            cout << "Apres dense1 backward: " << dense1.dinputs.rows() << "x" << dense1.dinputs.cols() << endl;
+        // Calcul de la précision toutes les 10 époques
+        double accuracy = 0.0;
+        if (epoch % params.checkpoint == 0)
+        {
+            accuracy = calculate_accuracy(loss_activation.output, y);
+        }
 
+        // Backward pass
+        loss_activation.backward(loss_activation.output, y);
+        dense3.backward(loss_activation.dinputs);
+        cout << "Apres dense3 backward: " << dense3.dinputs.rows() << "x" << dense3.dinputs.cols() << endl;
 
-            pool3.backward(pool3.unflatten(dense1.dinputs));
-            cout << "Apres pool3 backward: " << pool3.dinput[0][0].rows() << "x" << pool3.dinput[0][0].cols() << endl;
+        activation2.backward(dense3.dinputs);
+        dense2.backward(activation2.dinputs);
+        cout << "Apres dense2 backward: " << dense2.dinputs.rows() << "x" << dense2.dinputs.cols() << endl;
 
-            conv3_activation.backward(pool3.dinput);
-            // cout << "Apres conv3_activation backward: " << conv3_activation.dinputs[0][0].rows() << "x" << conv3_activation.dinputs[0][0].cols() << endl;
-            
-            conv3.backward(conv3_activation.dinputs);
-            cout << "Apres conv3 backward: " << conv3.dinputs[0][0].rows() << "x" << conv3.dinputs[0][0].cols() << endl;
+        activation1.backward(dense2.dinputs);
+        dense1.backward(activation1.dinputs);
+        cout << "Apres dense1 backward: " << dense1.dinputs.rows() << "x" << dense1.dinputs.cols() << endl;
 
-            pool2.backward(conv3.dinputs);
-            cout << "Apres pool2 backward: " << pool2.dinput[0][0].rows() << "x" << pool2.dinput[0][0].cols() << endl;
+        pool3.backward(pool3.unflatten(dense1.dinputs));
+        cout << "Apres pool3 backward: " << pool3.dinput[0][0].rows() << "x" << pool3.dinput[0][0].cols() << endl;
 
-            conv2_activation.backward(pool2.dinput);
-            // cout << "Apres conv2_activation backward: " << conv2_activation.dinputs[0][0].rows() << "x" << conv2_activation.dinputs[0][0].cols() << endl;
+        conv3_activation.backward(pool3.dinput);
+        // cout << "Apres conv3_activation backward: " << conv3_activation.dinputs[0][0].rows() << "x" << conv3_activation.dinputs[0][0].cols() << endl;
 
-            conv2.backward(conv2_activation.dinputs);
-            cout << "Apres conv2 backward: " << conv2.dinputs[0][0].rows() << "x" << conv2.dinputs[0][0].cols() << endl;
+        conv3.backward(conv3_activation.dinputs);
+        cout << "Apres conv3 backward: " << conv3.dinputs[0][0].rows() << "x" << conv3.dinputs[0][0].cols() << endl;
 
-            
-            pool1.backward(conv2.dinputs);
-            cout << "Apres pool1 backward: " << pool1.dinput[0][0].rows() << "x" << pool1.dinput[0][0].cols() << endl;
+        pool2.backward(conv3.dinputs);
+        cout << "Apres pool2 backward: " << pool2.dinput[0][0].rows() << "x" << pool2.dinput[0][0].cols() << endl;
 
-            conv1_activation.backward(pool1.dinput);
-            // cout << "Apres conv1_activation backward: " << conv1_activation.dinputs[0][0].rows() << "x" << conv1_activation.dinputs[0][0].cols() << endl;
+        conv2_activation.backward(pool2.dinput);
+        // cout << "Apres conv2_activation backward: " << conv2_activation.dinputs[0][0].rows() << "x" << conv2_activation.dinputs[0][0].cols() << endl;
 
-            conv1.backward(pool1.dinput);
-            cout << "Apres conv1 backward: " << conv1.dinputs[0][0].rows() << "x" << conv1.dinputs[0][0].cols() << endl;
-            
-            // Mise à jour des poids
-            optimizer.pre_update_params();
-            optimizer.update_params(dense1);
-            optimizer.update_params(dense2);
-            optimizer.update_params(dense3);
-            optimizer.update_params(conv1);
-            optimizer.update_params(conv2);
-            optimizer.update_params(conv3);
-            optimizer.post_update_params();
-            // Affichage des résultats
-            if (epoch % params.checkpoint == 0) {
-                cout << "Époque " << epoch 
-                     << " | Loss: " << loss  << "("
-                     << "data_loss: " << data_loss << ", "
-                     << "reg_loss: " << regularization_loss << ") "
-                     << " | Accuracy: " << accuracy << "%"
-                     << " | lr: " << optimizer.current_learning_rate;
+        conv2.backward(conv2_activation.dinputs);
+        cout << "Apres conv2 backward: " << conv2.dinputs[0][0].rows() << "x" << conv2.dinputs[0][0].cols() << endl;
 
-                dump_metrics(epoch, loss, accuracy);
-            }           
+        pool1.backward(conv2.dinputs);
+        cout << "Apres pool1 backward: " << pool1.dinput[0][0].rows() << "x" << pool1.dinput[0][0].cols() << endl;
+
+        conv1_activation.backward(pool1.dinput);
+        // cout << "Apres conv1_activation backward: " << conv1_activation.dinputs[0][0].rows() << "x" << conv1_activation.dinputs[0][0].cols() << endl;
+
+        conv1.backward(pool1.dinput);
+        cout << "Apres conv1 backward: " << conv1.dinputs[0][0].rows() << "x" << conv1.dinputs[0][0].cols() << endl;
+
+        // Mise à jour des poids
+        optimizer.pre_update_params();
+        optimizer.update_params(dense1);
+        optimizer.update_params(dense2);
+        optimizer.update_params(dense3);
+        optimizer.update_params(conv1);
+        optimizer.update_params(conv2);
+        optimizer.update_params(conv3);
+        optimizer.post_update_params();
+        // Affichage des résultats
+        if (epoch % params.checkpoint == 0)
+        {
+            cout << "Époque " << epoch
+                 << " | Loss: " << loss << "("
+                 << "data_loss: " << data_loss << ", "
+                 << "reg_loss: " << regularization_loss << ") "
+                 << " | Accuracy: " << accuracy << "%"
+                 << " | lr: " << optimizer.current_learning_rate;
+
+            dump_metrics(epoch, loss, accuracy);
+        }
     }
 }
 
-void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y, vector<string>& classes)
+void CNNModel::evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y, vector<string> &classes)
 {
     cout << "\n=== PHASE D'ÉVALUATION ===" << endl;
-    
+
     int correct_predictions = 0;
     int total_samples = inputs.size();
-    
-    for(int i = 0; i < total_samples; ++i){
+
+    for (int i = 0; i < total_samples; ++i)
+    {
         std::cout << "\n-- Échantillon " << i << "/" << total_samples << std::endl;
         // Extract single input sample
         std::vector<std::vector<MatrixXd>> single_input = {{inputs[i]}};
-        
+
         // Forward pass for this sample
         conv1.forward(single_input);
         conv1_activation.forward(conv1.output_maps);
         pool1.forward(conv1.output_maps);
         conv2.forward(pool1.output_maps);
         conv2_activation.forward(conv2.output_maps);
-        pool2.forward(conv2.output_maps);    
+        pool2.forward(conv2.output_maps);
         conv3.forward(pool2.output_maps);
         conv3_activation.forward(conv3.output_maps);
-        pool3.forward(conv3.output_maps);     
+        pool3.forward(conv3.output_maps);
 
         MatrixXd X = pool3.flatten();
         dense1.forward(X);
         activation1.forward(dense1.output);
-        dense2.forward(activation1.output);     
+        dense2.forward(activation1.output);
         activation2.forward(dense2.output);
         dense3.forward(activation2.output);
-        
+
         // Apply softmax manually to get probabilities
         MatrixXd logits = dense3.output;
         MatrixXd exp_logits = logits.array().exp();
         double sum_exp = exp_logits.sum();
         MatrixXd output_probs = exp_logits / sum_exp;
-        
+
         // Find predicted class
         int predicted_class = 0;
         double max_prob = output_probs(0, 0);
-        for(int j = 1; j < output_probs.cols(); ++j) {
-            if(output_probs(0, j) > max_prob) {
+        for (int j = 1; j < output_probs.cols(); ++j)
+        {
+            if (output_probs(0, j) > max_prob)
+            {
                 max_prob = output_probs(0, j);
                 predicted_class = j;
             }
         }
-        
+
         // Get ground truth
         int ground_truth = Y[i];
-        
+
         // Check if prediction is correct
-        if(predicted_class == ground_truth) {
+        if (predicted_class == ground_truth)
+        {
             correct_predictions++;
         }
-        
+
         // Log the prediction details
         cout << "Sample " << i << ":" << endl;
-        cout << "  Predicted class: " << predicted_class 
+        cout << "  Predicted class: " << predicted_class
              << " (" << classes[predicted_class] << ")"
-             << " | Probability: " << max_prob * 100 << "%" 
-             << " | Ground truth: " << ground_truth 
+             << " | Probability: " << max_prob * 100 << "%"
+             << " | Ground truth: " << ground_truth
              << " (" << classes[ground_truth] << ")"
              << " | " << (predicted_class == ground_truth ? "CORRECT" : "WRONG") << endl;
     }
 
     cout << "\n=== RÉSULTATS D'ÉVALUATION ===" << endl;
-    
+
     // Calculate overall accuracy
     double accuracy = static_cast<double>(correct_predictions) / total_samples * 100.0;
     cout << "\n=== RÉSULTATS FINAUX ===" << endl;
@@ -334,78 +390,140 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& Y,
 
 void CNNModel::predict(std::vector<std::vector<MatrixXd>> &inputs, vector<string> &classes)
 {
-     cout << "\n=== PHASE De Test ===" << endl;
-    
+    cout << "\n=== PHASE De Test ===" << endl;
+
     int total_samples = inputs.size();
-    
-    for(int i = 0; i < total_samples; ++i){
+
+    for (int i = 0; i < total_samples; ++i)
+    {
         std::cout << "\n-- Échantillon " << i << "/" << total_samples << std::endl;
         // Extract single input sample
         std::vector<std::vector<MatrixXd>> single_input = {{inputs[i]}};
-        
+
         // Forward pass for this sample
         conv1.forward(single_input);
         conv1_activation.forward(conv1.output_maps);
         pool1.forward(conv1.output_maps);
         conv2.forward(pool1.output_maps);
         conv2_activation.forward(conv2.output_maps);
-        pool2.forward(conv2.output_maps);    
+        pool2.forward(conv2.output_maps);
         conv3.forward(pool2.output_maps);
         conv3_activation.forward(conv3.output_maps);
-        pool3.forward(conv3.output_maps);     
+        pool3.forward(conv3.output_maps);
 
         MatrixXd X = pool3.flatten();
         dense1.forward(X);
         activation1.forward(dense1.output);
-        dense2.forward(activation1.output);     
+        dense2.forward(activation1.output);
         activation2.forward(dense2.output);
         dense3.forward(activation2.output);
-        
+
         // Apply softmax manually to get probabilities
         MatrixXd logits = dense3.output;
         MatrixXd exp_logits = logits.array().exp();
         double sum_exp = exp_logits.sum();
         MatrixXd output_probs = exp_logits / sum_exp;
-        
+
         // Find predicted class
         int predicted_class = 0;
         double max_prob = output_probs(0, 0);
-        for(int j = 1; j < output_probs.cols(); ++j) {
-            if(output_probs(0, j) > max_prob) {
+        for (int j = 1; j < output_probs.cols(); ++j)
+        {
+            if (output_probs(0, j) > max_prob)
+            {
                 max_prob = output_probs(0, j);
                 predicted_class = j;
             }
         }
-        
-        
-        
+
         // Log the prediction details
-        cout << "  Predicted class: " << predicted_class 
+        cout << "  Predicted class: " << predicted_class
              << " (" << classes[predicted_class] << ")"
-             << " | Probability: " << max_prob * 100 << "%" 
+             << " | Probability: " << max_prob * 100 << "%"
              << endl;
     }
 }
 
-void CNNModel::dump()
+
+
+void CNNModel::dump(const std::string &filename)
 {
-    std::ofstream file_model("./model.bin", ios_base::binary); 
-    std::cout << "Hello world" << std::endl;
-    // file_model.write(reinterpret_cast<char*>(this->leaning_rate), sizeof(this));
+    const std::string PROJECT_WEIGHTS_DIR = "../../db/";  //
+
+    std::cout << "Saving model to: " << filename << std::endl;
+    
+    // Créer le dossier parent si nécessaire
+    fs::path filepath(PROJECT_WEIGHTS_DIR + filename);
+    fs::path dir = filepath.parent_path();
+    
+    if (!dir.empty() && !fs::exists(dir)) {
+        std::cout << "Creating directory: " << dir << std::endl;
+        if (!fs::create_directories(dir)) {
+            throw std::runtime_error("Failed to create directory: " + dir.string());
+        }
+    }
+    
+    // Ouvrir le fichier
+    std::ofstream ofs(filepath, std::ios::binary);
+    if (!ofs) {
+        throw std::runtime_error("Cannot open file: " + filename + 
+                                 " (error: " + strerror(errno) + ")");
+    }
+    
+    // Sauvegarder
+    boost::archive::binary_oarchive oa(ofs);
+    oa << *this;
+    
+    // Vérifier la taille du fichier
+    ofs.close();
+    if (fs::exists(filepath)) {
+        auto size = fs::file_size(filepath);
+        std::cout << "✓ Model saved successfully (" 
+                  << size << " bytes, " 
+                  << size / 1024 << " KB)" << std::endl;
+    } else {
+        throw std::runtime_error("File was not created: " + filename);
+    }
 }
 
-// CNNModel load(){
-//     CNNModel model;
+bool CNNModel::load(const std::string &filename)
+{
 
-//     std::ifstream file_model("./model.bin", ios_base::binary);
-//     // file_model.read(reinterpret_cast<CNNModel>(model), sizeof(model));
-//     return model;
-// }
+    const std::string PROJECT_WEIGHTS_DIR = "../../db/";  //
+    
+    fs::path filepath(PROJECT_WEIGHTS_DIR + filename);
 
-
-void CNNModel::dump_metrics(int epoch, double loss, double accuracy){
-    eval << "Époque " << epoch << " | Loss: " << loss 
-    << " | Accuracy: " << accuracy << "%" << endl;
+    std::cout << "Loading model from: " << filename << std::endl;
+    
+    // Vérifier l'existence du fichier
+    if (!fs::exists(filepath)) {
+        throw std::runtime_error("File does not exist: " + filename);
+    }
+    
+    // Vérifier la taille
+    auto size = fs::file_size(filepath);
+    if (size == 0) {
+        throw std::runtime_error("File is empty: " + filename);
+    }
+    
+    std::cout << "File size: " << size << " bytes" << std::endl;
+    
+    // Ouvrir et charger
+    std::ifstream ifs(filepath, std::ios::binary);
+    if (!ifs) {
+        throw std::runtime_error("Cannot open file: " + filename);
+    }
+    
+    boost::archive::binary_iarchive ia(ifs);
+    ia >> *this;
+    
+    std::cout << "✓ Model loaded successfully" << std::endl;
+    return true;
 }
 
 
+void CNNModel::dump_metrics(int epoch, double loss, double accuracy)
+{
+    eval << "Époque " << epoch << " | Loss: " << loss
+         << " | Accuracy: " << accuracy << "%" << endl;
+}

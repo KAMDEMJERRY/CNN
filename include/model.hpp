@@ -5,6 +5,7 @@
 #include "dense.hpp"
 #include "omp.hpp"
 #include <fstream>
+
 class CNNParameters {
 public:
     double learning_rate;
@@ -122,11 +123,17 @@ public:
     CNNModel(CNNParameters& params);   
     CNNModel();   
     ~CNNModel() = default;
+    void sethyperparams(CNNParameters &params);
     void compile();
     void fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y);
     void evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y, vector<string> &classes);
     void predict(std::vector<std::vector<MatrixXd>> &inputs, vector<string> &classes);
-    void dump();
+    void dump(
+        const std::string & filename
+    );
+    bool load(
+        const std::string & filename
+    );
     void dump_metrics(int epoch, double loss, double accuracy);
     // auto forward();
     // auto loss();

@@ -3,9 +3,22 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <random>
+
+#include <boost/serialization/serialization.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
+#include <Eigen/Dense>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/array.hpp>
 #include "convolution.hpp"
 #include "imgdataset.hpp"
 #include "omp.hpp"
+
 
 using namespace std;
 using namespace Eigen;

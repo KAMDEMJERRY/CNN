@@ -49,7 +49,7 @@ int main(int argc, char*argv[]) {
         // Définir les paramètres du modèle CNN
 
         CNNParameters params;
-        params.epochs = 100;
+        params.epochs = 1;
         params.learning_rate = 0.01;
         params.decay = 1e-5;
         params.momentum = 0.9;
@@ -97,21 +97,67 @@ int main(int argc, char*argv[]) {
 
         CNNModel cnn_model(params);
         cnn_model.compile();
-        // model.load()
 
 
 
 
+        try{
+            int choice;
+            std::cout << "\nLoad the model from previous archive ?? 0: Yes  | 1: No" << std::endl;
+            std::cout << ">>> ";
+            std::cin >> choice;
+            
+            if(choice == 0){
+                std::string defaultfilepath = "model.bin";
+                std::string filepath = "";
+                std::cout << "\n Enter the filename  or hit enter to save to default file (" << filepath <<")"<< std::endl;
+                std::cout << ">>> ";
+
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::getline(std::cin, filepath);
+
+                if(filepath.empty()){
+                    filepath = defaultfilepath;
+                }
+                
+                cnn_model.load(filepath);
+
+                std::cout << "Model loaded from : " << filepath << std::endl;
+            
+
+                // After loading, you might want to reset or adjust hyperparameters
+                params.epochs = 1;
+                params.learning_rate = 0.01;
+                params.decay = 1e-5;
+                params.momentum = 0.9;
+                params.checkpoint = 1; 
+
+                params.d_weight_regularizer_l1 = 0;
+                params.d_weight_regularizer_l2 = 1e-4;
+                params.d_bias_regularizer_l1 = 0;
+                params.d_bias_regularizer_l2 = 1e-4;
+
+                params.c_weight_regularizer_l1 = 0;
+                params.c_weight_regularizer_l2 = 1e-4;
+                params.c_bias_regularizer_l1 = 0;
+                params.c_bias_regularizer_l2 = 1e-4;
+        
+                cnn_model.sethyperparams(params);
+            }
 
 
-
-
+            
+           
+        }catch (const std::exception& e) {
+            cerr << "ERREUR: " << e.what() << endl;
+            return 1;
+        }
 
 
 
         
         while(1){
-            std::cout << "0: Train | 1: Test | 2: Quit" << std::endl;
+            std::cout << "\n0: Train | 1: Test | 2: Quit" << std::endl;
             int choice;
             std::cout << ">>> ";
             std::cin >> choice;
@@ -120,7 +166,34 @@ int main(int argc, char*argv[]) {
             {
                 case 0:
                     cnn_model.fit(inputs_train, y_train);
-                    // dump(cnn_model);
+                    {
+                        int choice;
+                        std::cout << "\nDump the model ?? 0: Yes  | 1: No" << std::endl;
+                        std::cout << ">>> ";
+                        std::cin >> choice;
+                        
+                        if(choice == 0){
+                            std::string defaultfilepath = "model.bin";
+                            std::string filepath = "";
+                            
+                            std::cout << "\n Enter the filename or hit enter to save to default file (" << filepath <<")"<< std::endl;
+                            std::cout << ">>> ";
+
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::getline(std::cin, filepath);
+
+                            if(filepath.empty()){
+                                filepath = defaultfilepath;
+                            }
+                        
+                            std::cout << "Saving model to : " << filepath << std::endl;
+                            cnn_model.dump(filepath);
+                            std::cout << "Model stored into : " << filepath << std::endl;
+
+                        }
+   
+                    }
+
                     break;
                 case 1:
                     cnn_model.evaluate(inputs_test, y_test, imgDataset.classes);

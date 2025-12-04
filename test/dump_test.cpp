@@ -12,7 +12,6 @@
 #include <boost/serialization/array.hpp>
 
 // Include vos headers
-#include "model.hpp"
 #include "model_repo.hpp"
 
 namespace fs = std::filesystem;

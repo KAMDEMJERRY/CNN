@@ -4,8 +4,9 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <random>
-#include "utils.hpp"
 #include "convolution.hpp"
+#include "utils.hpp"
+
 #include "omp.hpp"
 
 
