@@ -164,8 +164,13 @@ int main(int argc, char*argv[]) {
             bool quit = false;
             switch (choice)
             {
-                case 0:
+                case 0:{
+                    TIMER_START(start_train);
                     cnn_model.fit(inputs_train, y_train);
+                    TIMER_END(start_train);
+                    TIMER_PRINT(start_train, "Training time");
+
+                    
                     {
                         int choice;
                         std::cout << "\nDump the model ?? 0: Yes  | 1: No" << std::endl;
@@ -195,9 +200,16 @@ int main(int argc, char*argv[]) {
                     }
 
                     break;
-                case 1:
+                }
+                    
+                case 1:{
+                    TIMER_START(start_eval);
                     cnn_model.evaluate(inputs_test, y_test, imgDataset.classes);
+                    TIMER_END(start_eval);
+                    TIMER_PRINT(start_eval, "Evaluation time");
                     break;
+                }
+                   
 
                 case 2:
                     quit = true;

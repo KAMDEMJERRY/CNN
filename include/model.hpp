@@ -12,7 +12,7 @@ public:
     double decay;
     double momentum;
     double epochs;
-    double iterations;
+    double iterations = 0;
     double batch_size;
 
     double d_weight_regularizer_l1 = 0;
@@ -117,7 +117,8 @@ public:
     double c_bias_regularizer_l1 = 0;
     double c_bias_regularizer_l2 = 0;
 
-    std::ofstream eval;
+    std::ofstream train;
+    std::ofstream test;
     
 
     CNNModel(CNNParameters& params);   
@@ -135,12 +136,14 @@ public:
         const std::string & filename
     );
     void dump_metrics(int epoch, double loss, double accuracy);
+    void dump_metrics(int epoch, double accuracy, int correct_predictions, int total_samples);
     // auto forward();
     // auto loss();
     // auto backward();
     // auto update();
 };
 
-inline std::string metrics_file = R"(/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/eval.txt)";
+inline std::string metrics_file = R"(/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/train.txt)";
+inline std::string metrics_file1 = R"(/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/eval.txt)";
 #endif // MODEL
 

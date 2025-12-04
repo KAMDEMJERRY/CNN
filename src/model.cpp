@@ -43,7 +43,7 @@ CNNModel::CNNModel(CNNParameters &params)
       conv1_activation(), conv2_activation(), conv3_activation(),
       activation1(), activation2(),
       loss_activation(),
-      optimizer(params.learning_rate, params.decay, params.momentum), eval(metrics_file, std::ios::app)
+      optimizer(params.learning_rate, params.decay, params.momentum), train(metrics_file, std::ios::app), test(metrics_file1, std::ios::app)
 
 {
     decay = params.decay;
@@ -61,10 +61,10 @@ CNNModel::CNNModel(CNNParameters &params)
 
 CNNModel::CNNModel() {}
 
-
-void CNNModel::sethyperparams(CNNParameters &params){
+void CNNModel::sethyperparams(CNNParameters &params)
+{
     this->params = params;
-  // Convolution Layers
+    // Convolution Layers
     conv1.weight_regularizer_l1 = params.c_weight_regularizer_l1;
     conv1.weight_regularizer_l2 = params.c_weight_regularizer_l2;
     conv1.bias_regularizer_l1 = params.c_weight_regularizer_l1;
@@ -192,9 +192,10 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y)
     cout << "\n=== PHASE D'ENTRAÎNEMENT ===" << endl;
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
+        params.iterations++;
 
         // Forward pass
-        cout << "\nEpoch :" << epoch << "/" << epochs << "\n";
+        cout << "\nEpoch :" << epoch + 1 << "/" << epochs << "\n";
         conv1.forward(inputs);
         cout << "Après conv1: " << conv1.output_maps[0][0].rows() << "x" << conv1.output_maps[0][0].cols() << endl;
         conv1_activation.forward(conv1.output_maps);
@@ -304,9 +305,9 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y)
                  << "data_loss: " << data_loss << ", "
                  << "reg_loss: " << regularization_loss << ") "
                  << " | Accuracy: " << accuracy << "%"
-                 << " | lr: " << optimizer.current_learning_rate;
+                 << " | lr: " << optimizer.current_learning_rate << endl;
 
-            dump_metrics(epoch, loss, accuracy);
+            dump_metrics(this->params.iterations, loss, accuracy);
         }
     }
 }
@@ -320,7 +321,6 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y,
 
     for (int i = 0; i < total_samples; ++i)
     {
-        std::cout << "\n-- Échantillon " << i << "/" << total_samples << std::endl;
         // Extract single input sample
         std::vector<std::vector<MatrixXd>> single_input = {{inputs[i]}};
 
@@ -369,14 +369,13 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y,
             correct_predictions++;
         }
 
-        // Log the prediction details
-        cout << "Sample " << i << ":" << endl;
-        cout << "  Predicted class: " << predicted_class
-             << " (" << classes[predicted_class] << ")"
-             << " | Probability: " << max_prob * 100 << "%"
-             << " | Ground truth: " << ground_truth
-             << " (" << classes[ground_truth] << ")"
-             << " | " << (predicted_class == ground_truth ? "CORRECT" : "WRONG") << endl;
+        std::cout << "\nSample " << i+1 << "/" << total_samples << ":" << std::endl;
+        std::cout << "  Predicted class: " << predicted_class
+                  << " (" << classes[predicted_class] << ")"
+                  << " | Probability: " << max_prob * 100 << "%"
+                  << " | Ground truth: " << ground_truth
+                  << " (" << classes[ground_truth] << ")"
+                  << " | " << (predicted_class == ground_truth ? "CORRECT" : "WRONG") << endl;
     }
 
     cout << "\n=== RÉSULTATS D'ÉVALUATION ===" << endl;
@@ -386,6 +385,7 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y,
     cout << "\n=== RÉSULTATS FINAUX ===" << endl;
     cout << "Accuracy globale: " << accuracy << "%" << endl;
     cout << "Correct: " << correct_predictions << "/" << total_samples << endl;
+    dump_metrics(this->params.iterations, accuracy, correct_predictions, total_samples);
 }
 
 void CNNModel::predict(std::vector<std::vector<MatrixXd>> &inputs, vector<string> &classes)
@@ -444,44 +444,48 @@ void CNNModel::predict(std::vector<std::vector<MatrixXd>> &inputs, vector<string
     }
 }
 
-
-
 void CNNModel::dump(const std::string &filename)
 {
-    const std::string PROJECT_WEIGHTS_DIR = "../../db/";  //
+    const std::string PROJECT_WEIGHTS_DIR = "../../db/"; //
 
     std::cout << "Saving model to: " << filename << std::endl;
-    
+
     // Créer le dossier parent si nécessaire
     fs::path filepath(PROJECT_WEIGHTS_DIR + filename);
     fs::path dir = filepath.parent_path();
-    
-    if (!dir.empty() && !fs::exists(dir)) {
+
+    if (!dir.empty() && !fs::exists(dir))
+    {
         std::cout << "Creating directory: " << dir << std::endl;
-        if (!fs::create_directories(dir)) {
+        if (!fs::create_directories(dir))
+        {
             throw std::runtime_error("Failed to create directory: " + dir.string());
         }
     }
-    
+
     // Ouvrir le fichier
     std::ofstream ofs(filepath, std::ios::binary);
-    if (!ofs) {
-        throw std::runtime_error("Cannot open file: " + filename + 
+    if (!ofs)
+    {
+        throw std::runtime_error("Cannot open file: " + filename +
                                  " (error: " + strerror(errno) + ")");
     }
-    
+
     // Sauvegarder
     boost::archive::binary_oarchive oa(ofs);
     oa << *this;
-    
+
     // Vérifier la taille du fichier
     ofs.close();
-    if (fs::exists(filepath)) {
+    if (fs::exists(filepath))
+    {
         auto size = fs::file_size(filepath);
-        std::cout << "✓ Model saved successfully (" 
-                  << size << " bytes, " 
+        std::cout << "✓ Model saved successfully ("
+                  << size << " bytes, "
                   << size / 1024 << " KB)" << std::endl;
-    } else {
+    }
+    else
+    {
         throw std::runtime_error("File was not created: " + filename);
     }
 }
@@ -489,41 +493,49 @@ void CNNModel::dump(const std::string &filename)
 bool CNNModel::load(const std::string &filename)
 {
 
-    const std::string PROJECT_WEIGHTS_DIR = "../../db/";  //
-    
+    const std::string PROJECT_WEIGHTS_DIR = "../../db/"; //
+
     fs::path filepath(PROJECT_WEIGHTS_DIR + filename);
 
     std::cout << "Loading model from: " << filename << std::endl;
-    
+
     // Vérifier l'existence du fichier
-    if (!fs::exists(filepath)) {
+    if (!fs::exists(filepath))
+    {
         throw std::runtime_error("File does not exist: " + filename);
     }
-    
+
     // Vérifier la taille
     auto size = fs::file_size(filepath);
-    if (size == 0) {
+    if (size == 0)
+    {
         throw std::runtime_error("File is empty: " + filename);
     }
-    
+
     std::cout << "File size: " << size << " bytes" << std::endl;
-    
+
     // Ouvrir et charger
     std::ifstream ifs(filepath, std::ios::binary);
-    if (!ifs) {
+    if (!ifs)
+    {
         throw std::runtime_error("Cannot open file: " + filename);
     }
-    
+
     boost::archive::binary_iarchive ia(ifs);
     ia >> *this;
-    
+
     std::cout << "✓ Model loaded successfully" << std::endl;
     return true;
 }
 
-
 void CNNModel::dump_metrics(int epoch, double loss, double accuracy)
 {
-    eval << "Époque " << epoch << " | Loss: " << loss
-         << " | Accuracy: " << accuracy << "%" << endl;
+        train << "Époque: " << epoch << " | Loss: " << loss
+             << " | Accuracy: " << accuracy << "%" << std::endl;
+}
+
+void CNNModel::dump_metrics(int epoch, double accuracy, int correct_predictions, int total_samples)
+{
+        test << "Epoque: "<< epoch << " | Accuracy globale: " << accuracy << "%"
+            << " | Correct: " << correct_predictions << "/" << total_samples << endl;
 }

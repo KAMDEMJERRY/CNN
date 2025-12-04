@@ -173,7 +173,7 @@ def console_monitor(log_file_path):
         print("\n⏹️  Arrêté")
 
 if __name__ == "__main__":
-    LOG_FILE = "eval.txt"  # Remplacez par votre fichier
+    LOG_FILE = "train.txt"  # Remplacez par votre fichier
     
     # Choisissez une solution :
     
