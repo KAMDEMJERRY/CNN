@@ -103,7 +103,6 @@ public:
     double momentum;
 
     Optimizer_SGD(double learning_rate=1.0,double decay=.0, double momentum=0.);
-
     void pre_update_params();
     void update_params(DenseLayer& layer);
     void update_params(ConvLayer &layer);

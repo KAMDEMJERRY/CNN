@@ -3,10 +3,7 @@
 #include <omp.h>
 
 
-int main(int argc, char* argv[]){
-    // omp_set_num_threads(4); 
-    
-    
+int main(int argc, char* argv[]){    
 
     int num_thread = 1;
     if(argc > 1){

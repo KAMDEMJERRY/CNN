@@ -91,6 +91,9 @@ void ConvLayer::forward(const std::vector<std::vector<MatrixXd>> &batch_input_ma
             output_maps_i[oc] = MatrixXd::Zero(output_size, output_size);
         }
 
+        std::cout << "\nFrom convforward: input maps for sample i (" << (input_maps_i.size()) << ")\n";
+        std::cout << "\nFrom convforward: Conv inputchannel (" << (input_ch) << ")\n";
+
         if (input_maps_i.size() != input_ch)
         {
             throw std::invalid_argument("Le nombre de cartes d'entree ne correspond pas au nombre de canaux d'entrees");
@@ -332,8 +335,9 @@ vector<vector<MatrixXd>> &PoolLayer::backward(std::vector<std::vector<MatrixXd>>
 
 void PoolLayer::forward(const std::vector<std::vector<MatrixXd>> &batch_in_maps)
 {
+    
     int n_inputs = batch_in_maps.size();
-    int output_ch = input_ch;
+    int output_ch = this->input_ch;
     output_maps.clear();
     max_indices.clear();
 
@@ -345,14 +349,18 @@ void PoolLayer::forward(const std::vector<std::vector<MatrixXd>> &batch_in_maps)
         std::vector<MatrixXd> output_maps_i(output_ch);
         std::vector<std::vector<std::pair<int, int>>> max_indices_i(output_ch);
 
+        
+
         for (int oc = 0; oc < output_ch; oc++)
         {
             output_maps_i[oc] = MatrixXd::Zero(output_size, output_size);
             max_indices_i[oc].resize(output_size * output_size);
         }
 
-        if (input_maps_i.size() != input_ch)
-        {
+        if (input_maps_i.size() != this->input_ch)
+        {   
+           
+       
             throw std::invalid_argument("Le nombre de cartes d'entrée ne correspond pas au nombre de canaux d'entrée.");
         }
         try

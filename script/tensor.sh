@@ -15,7 +15,7 @@ cmake --build build
 echo "Evaluation des algorithmes"
 
 cd ./build/src/
-# export OMP_NUM_THREADS=8 # Sets the number of threads to 4
-./EVAL
-# gdb ./EVAL 
+export OMP_NUM_THREADS=8 # Sets the number of threads to 4
+./TENSOR 8
+# gdb ./TENSOR 
 cd ../../script
