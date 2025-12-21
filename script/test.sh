@@ -11,8 +11,9 @@ cd build/test/
 
 
 # run unit test
-cd ../build/test/
-ctest --output-on-failure -V # Affiche la sortie seulement si échec
+# cd ../build/test/
+ctest -R BoostTest # Affiche la sortie seulement si échec
+# ctest -R BoostTest
 cd ../../script
 #.CNNtest
 

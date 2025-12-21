@@ -241,7 +241,7 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y)
 
         double loss = data_loss + regularization_loss;
 
-        // Calcul de la précision toutes les 10 époques
+        // Calcul de l'accuracy toutes les 10 époques
         double accuracy = 0.0;
         if (epoch % params.checkpoint == 0)
         {
