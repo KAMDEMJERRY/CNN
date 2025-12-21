@@ -453,7 +453,6 @@ void Optimizer_SGD::update_params(ConvLayer& layer){
     for(int oc = 0; oc < layer.output_ch; ++oc) {
         for(int ic = 0; ic < layer.input_ch; ++ic) {
             filters_updates[oc][ic] = MatrixXd::Zero(layer.filter_size, layer.filter_size);
-            // debug_file << "weights gradient grad[" << oc << "][" << ic << "] to zeros.\n" << layer.dweights[oc][ic] << std::endl;
         }
     }
     biases_updates.setZero();

@@ -59,8 +59,6 @@ CNNModel::CNNModel(CNNParameters &params)
     double c_bias_regularizer_l2 = params.c_weight_regularizer_l2;
 }
 
-CNNModel::CNNModel() {}
-
 void CNNModel::sethyperparams(CNNParameters &params)
 {
     this->params = params;
@@ -319,57 +317,55 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y,
     int correct_predictions = 0;
     int total_samples = inputs.size();
 
-    for (int i = 0; i < total_samples; ++i)
+    // Forward pass for this sample
+    conv1.forward(inputs);
+    conv1_activation.forward(conv1.output_maps);
+    pool1.forward(conv1.output_maps);
+    conv2.forward(pool1.output_maps);
+    conv2_activation.forward(conv2.output_maps);
+    pool2.forward(conv2.output_maps);
+    conv3.forward(pool2.output_maps);
+    conv3_activation.forward(conv3.output_maps);
+    pool3.forward(conv3.output_maps);
+
+    MatrixXd X = pool3.flatten();
+    dense1.forward(X);
+    activation1.forward(dense1.output);
+    dense2.forward(activation1.output);
+    activation2.forward(dense2.output);
+    dense3.forward(activation2.output);
+
+
+    // Apply softmax manually to get probabilities
+    MatrixXd logits = dense3.output;
+    MatrixXd exp_logits = logits.array().exp();
+    VectorXd row_sum = exp_logits.rowwise().sum();
+    MatrixXd output_probs = exp_logits;
+    for (int i = 0; i < output_probs.rows(); i++)
     {
-        // Extract single input sample
-        std::vector<std::vector<MatrixXd>> single_input = {{inputs[i]}};
-
-        // Forward pass for this sample
-        conv1.forward(single_input);
-        conv1_activation.forward(conv1.output_maps);
-        pool1.forward(conv1.output_maps);
-        conv2.forward(pool1.output_maps);
-        conv2_activation.forward(conv2.output_maps);
-        pool2.forward(conv2.output_maps);
-        conv3.forward(pool2.output_maps);
-        conv3_activation.forward(conv3.output_maps);
-        pool3.forward(conv3.output_maps);
-
-        MatrixXd X = pool3.flatten();
-        dense1.forward(X);
-        activation1.forward(dense1.output);
-        dense2.forward(activation1.output);
-        activation2.forward(dense2.output);
-        dense3.forward(activation2.output);
-
-        // Apply softmax manually to get probabilities
-        MatrixXd logits = dense3.output;
-        MatrixXd exp_logits = logits.array().exp();
-        double sum_exp = exp_logits.sum();
-        MatrixXd output_probs = exp_logits / sum_exp;
-
-        // Find predicted class
+        output_probs.row(i) = output_probs.row(i) / row_sum(i);
+    }
+    for (int i = 0; i < total_samples; i++)
+    {
+        // Trouver la classe prédite pour l'échantillon i
         int predicted_class = 0;
-        double max_prob = output_probs(0, 0);
-        for (int j = 1; j < output_probs.cols(); ++j)
+        double max_prob = output_probs(i, 0);
+        for (int j = 1; j < output_probs.cols(); j++)
         {
-            if (output_probs(0, j) > max_prob)
+            if (output_probs(i, j) > max_prob)
             {
-                max_prob = output_probs(0, j);
+                max_prob = output_probs(i, j);
                 predicted_class = j;
             }
         }
 
-        // Get ground truth
-        int ground_truth = Y[i];
-
-        // Check if prediction is correct
+        int ground_truth = static_cast<int>(Y[i]);
         if (predicted_class == ground_truth)
         {
             correct_predictions++;
         }
 
-        std::cout << "\nSample " << i+1 << "/" << total_samples << ":" << std::endl;
+        std::cout << "\nSample " << i + 1 << "/" << total_samples << ":" << std::endl;
         std::cout << "  Predicted class: " << predicted_class
                   << " (" << classes[predicted_class] << ")"
                   << " | Probability: " << max_prob * 100 << "%"
@@ -388,60 +384,28 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y,
     dump_metrics(this->params.iterations, accuracy, correct_predictions, total_samples);
 }
 
-void CNNModel::predict(std::vector<std::vector<MatrixXd>> &inputs, vector<string> &classes)
+Eigen::MatrixXd CNNModel::predict(std::vector<std::vector<MatrixXd>> &inputs)
 {
     cout << "\n=== PHASE De Test ===" << endl;
 
-    int total_samples = inputs.size();
+    // Forward pass pour cet echantillon
+    conv1.forward(inputs);
+    conv1_activation.forward(conv1.output_maps);
+    pool1.forward(conv1.output_maps);
+    conv2.forward(pool1.output_maps);
+    conv2_activation.forward(conv2.output_maps);
+    pool2.forward(conv2.output_maps);
+    conv3.forward(pool2.output_maps);
+    conv3_activation.forward(conv3.output_maps);
+    pool3.forward(conv3.output_maps);
+    MatrixXd X = pool3.flatten();
+    dense1.forward(X);
+    activation1.forward(dense1.output);
+    dense2.forward(activation1.output);
+    activation2.forward(dense2.output);
+    dense3.forward(activation2.output);
 
-    for (int i = 0; i < total_samples; ++i)
-    {
-        std::cout << "\n-- Échantillon " << i << "/" << total_samples << std::endl;
-        // Extract single input sample
-        std::vector<std::vector<MatrixXd>> single_input = {{inputs[i]}};
-
-        // Forward pass for this sample
-        conv1.forward(single_input);
-        conv1_activation.forward(conv1.output_maps);
-        pool1.forward(conv1.output_maps);
-        conv2.forward(pool1.output_maps);
-        conv2_activation.forward(conv2.output_maps);
-        pool2.forward(conv2.output_maps);
-        conv3.forward(pool2.output_maps);
-        conv3_activation.forward(conv3.output_maps);
-        pool3.forward(conv3.output_maps);
-
-        MatrixXd X = pool3.flatten();
-        dense1.forward(X);
-        activation1.forward(dense1.output);
-        dense2.forward(activation1.output);
-        activation2.forward(dense2.output);
-        dense3.forward(activation2.output);
-
-        // Apply softmax manually to get probabilities
-        MatrixXd logits = dense3.output;
-        MatrixXd exp_logits = logits.array().exp();
-        double sum_exp = exp_logits.sum();
-        MatrixXd output_probs = exp_logits / sum_exp;
-
-        // Find predicted class
-        int predicted_class = 0;
-        double max_prob = output_probs(0, 0);
-        for (int j = 1; j < output_probs.cols(); ++j)
-        {
-            if (output_probs(0, j) > max_prob)
-            {
-                max_prob = output_probs(0, j);
-                predicted_class = j;
-            }
-        }
-
-        // Log the prediction details
-        cout << "  Predicted class: " << predicted_class
-             << " (" << classes[predicted_class] << ")"
-             << " | Probability: " << max_prob * 100 << "%"
-             << endl;
-    }
+    return dense3.output;
 }
 
 void CNNModel::dump(const std::string &filename)
@@ -530,12 +494,12 @@ bool CNNModel::load(const std::string &filename)
 
 void CNNModel::dump_metrics(int epoch, double loss, double accuracy)
 {
-        train << "Époque: " << epoch << " | Loss: " << loss
-             << " | Accuracy: " << accuracy << "%" << std::endl;
+    train << "Époque: " << epoch << " | Loss: " << loss
+          << " | Accuracy: " << accuracy << "%" << std::endl;
 }
 
 void CNNModel::dump_metrics(int epoch, double accuracy, int correct_predictions, int total_samples)
 {
-        test << "Epoque: "<< epoch << " | Accuracy globale: " << accuracy << "%"
-            << " | Correct: " << correct_predictions << "/" << total_samples << endl;
+    test << "Epoque: " << epoch << " | Accuracy globale: " << accuracy << "%"
+         << " | Correct: " << correct_predictions << "/" << total_samples << endl;
 }

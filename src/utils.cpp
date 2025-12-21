@@ -133,9 +133,7 @@ std::unordered_map<std::string, std::string> loadEnvFile(const std::string& file
     return env;
 }
 
-std::string getFileName(){
 
-}
 
 // Utilisation
 // int main() {

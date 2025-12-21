@@ -7,7 +7,7 @@ vector<String> class_path = {"EOSINOPHIL", "LYMPHOCYTE", "MONOCYTE", "NEUTROPHIL
 
 ImageDataset::ImageDataset(string dataset_path, int img_size, string color_mode) : loader(dataset_path, img_size ,color_mode), image_size(img_size){
     images = loader.getImages();
-    // images = normalize();
+    images = normalize();
     labels = loader.getLabels();
     classes = loader.getClasses();
     ordinalEncoding(classes, labels);

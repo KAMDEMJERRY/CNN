@@ -6,7 +6,8 @@
 #include "omp.hpp"
 #include <fstream>
 
-class CNNParameters {
+class CNNParameters
+{
 public:
     double learning_rate;
     double decay;
@@ -24,11 +25,9 @@ public:
     double c_weight_regularizer_l2 = 0;
     double c_bias_regularizer_l1 = 0;
     double c_bias_regularizer_l2 = 0;
-    
+
     int checkpoint;
 
-
-    
     // Conv parameters //Square kernels assumed
     int conv1_inputsize;
     int conv1_input_channel_number;
@@ -62,33 +61,31 @@ public:
     int dense2_inputsize; // also number of neuron and  dense2 input size
     int dense3_inputsize;
     int dense4_inputsize;
-    
+
     // Database
     string dataset_path;
     string databaseURL;
     string bd_username;
     string bd_password;
 
-
     CNNParameters() = default;
-    ~CNNParameters() = default;   
-
+    ~CNNParameters() = default;
 };
 
-class CNNModel {
+class CNNModel
+{
 public:
-
     int id;
     CNNParameters params;
-    
+
     ConvLayer conv1;
     Activation_ReLU_Conv conv1_activation;
     PoolLayer pool1;
-    
+
     ConvLayer conv2;
     Activation_ReLU_Conv conv2_activation;
     PoolLayer pool2;
-    
+
     ConvLayer conv3;
     Activation_ReLU_Conv conv3_activation;
     PoolLayer pool3;
@@ -99,8 +96,7 @@ public:
     Activation_ReLU activation2;
     DenseLayer dense3;
     Activation_Softmax_Loss_CategoricalCrossentropy loss_activation;
-    Optimizer_SGD optimizer;   
-
+    Optimizer_SGD optimizer;
 
     double learning_rate;
     double decay;
@@ -119,22 +115,25 @@ public:
 
     std::ofstream train;
     std::ofstream test;
-    
 
-    CNNModel(CNNParameters& params);   
-    CNNModel();   
+    CNNModel(CNNParameters &params);
+    CNNModel() : conv1(), conv2(), conv3(), // You'll need to add default constructors to your layer classes
+                 pool1(), pool2(), pool3(),
+                 dense1(), dense2(), dense3(),
+                 conv1_activation(), conv2_activation(), conv3_activation(),
+                 activation1(), activation2(),
+                 loss_activation(){}
+    ;
     ~CNNModel() = default;
     void sethyperparams(CNNParameters &params);
     void compile();
-    void fit(std::vector<std::vector<MatrixXd>>& inputs, VectorXd& y);
+    void fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y);
     void evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y, vector<string> &classes);
-    void predict(std::vector<std::vector<MatrixXd>> &inputs, vector<string> &classes);
+    Eigen::MatrixXd predict(std::vector<std::vector<MatrixXd>> &inputs);
     void dump(
-        const std::string & filename
-    );
+        const std::string &filename);
     bool load(
-        const std::string & filename
-    );
+        const std::string &filename);
     void dump_metrics(int epoch, double loss, double accuracy);
     void dump_metrics(int epoch, double accuracy, int correct_predictions, int total_samples);
     // auto forward();
@@ -146,4 +145,3 @@ public:
 inline std::string metrics_file = R"(/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/train.txt)";
 inline std::string metrics_file1 = R"(/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/eval.txt)";
 #endif // MODEL
-
