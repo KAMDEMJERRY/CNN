@@ -5,7 +5,7 @@ String BASE_DATA_PATH = "../../../dataset/bloodcellsub/images/TRAIN/";
 vector<String> class_path = {"EOSINOPHIL", "LYMPHOCYTE", "MONOCYTE", "NEUTROPHIL"};
 
 
-ImageDataset::ImageDataset(string dataset_path, int img_size, string color_mode) : loader(dataset_path, img_size ,color_mode), image_size(img_size){
+ImageDataset::ImageDataset(string dataset_path, int img_size, string color_mode, int bound_per_class) : loader(dataset_path, img_size ,color_mode, bound_per_class), image_size(img_size){
     images = loader.getImages();
     // images = normalize();
     labels = loader.getLabels();
@@ -76,12 +76,6 @@ VectorXi ImageDataset::ordinalEncoding(vector<string> &classes, vector<string> &
     return encoded_labels;
 }
 
-ImageDatasetLoader::ImageDatasetLoader(string dataset_path, int img_size, string color_mode):dataset_path(dataset_path), color_mode(color_mode), image_width(img_size), image_height(img_size)
-{
-
-    loadDataset(img_size, img_size);
-    
-}
 
 vector<MatrixXd> ImageDatasetLoader::loadImage(string image_path, int target_height, int target_width) {
 
@@ -180,13 +174,20 @@ void ImageDatasetLoader::loadDataset( int target_height, int target_width)
 
         vector<string> class_image_paths = getJpegFiles(class_dir.string());
         
+        int image_count = 0;
         for (const auto &img_path : class_image_paths) {
             try {
                 std::vector<MatrixXd> img = loadImage(img_path, target_height, target_width);
                 images.push_back(img);
                 labels.push_back(classe);
+                image_count++;
             } catch (const exception &e) {
                 cerr << "Error loading " << img_path << ": " << e.what() << endl;
+            }
+
+            if (bound_per_class != 0 && image_count == bound_per_class) {
+                std::cout << "Bound per class : " << images.size() << " reached." << std::endl;
+                break;
             }
         }
     }

@@ -15,6 +15,7 @@ using namespace std;
 // Déclaration de la classe ConvLayer
 class ConvLayer
 {
+
 public:
     int input_size;
     int input_ch;
@@ -42,7 +43,8 @@ public:
     VectorXd biases_momentum;
 
     // Constructeur
-    ConvLayer(int in_size, int in_ch, int f_num, int f_size, int pad = 1, int str = 1,
+    ConvLayer(int in_size, int in_ch, int f_num,
+              int f_size, int pad = 1, int str = 1,
               double weight_regularizer_l1 = 0,
               double weight_regularizer_l2 = 0,
               double bias_regularizer_l1 = 0,

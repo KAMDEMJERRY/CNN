@@ -1,10 +1,39 @@
 #include "model.hpp"
 #include "model_repo.hpp"
+#include "utils.hpp"
 
 // #include <filesystem>
 // #include <iostream>
 
 namespace fs = std::filesystem;
+
+// Cette fonction sauvegarde dans un fichier une images des filtres de convolutions
+void visualizeFilters(CNNModel &model, bool use_grayscale)
+{
+    cout << "========================================" << endl;
+    cout << "VISUALISATION DES FILTRES CNN" << endl;
+    cout << "========================================" << endl;
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    std::string timeStamp =  std::ctime(&now_time) + string("  ");
+    // Visualisation en niveau de gris
+    showFilterEnhanced(string(timeStamp), " convlayer 1", model.conv1.filters, use_grayscale);
+    showFilterEnhanced(string(timeStamp), " convlayer 2", model.conv2.filters, use_grayscale);
+    showFilterEnhanced(string(timeStamp), " convlayer 3", model.conv3.filters, use_grayscale);
+
+    // Vous pouvez aussi visualiser en couleur ET en niveau de gris
+    if (use_grayscale)
+    {
+        // Afficher aussi en couleur pour comparaison
+        showFilterEnhanced(string(timeStamp), " convlayer 1_color", model.conv1.filters, false);
+        showFilterEnhanced(string(timeStamp), " convlayer 2_color", model.conv2.filters, false);
+        showFilterEnhanced(string(timeStamp), " convlayer 3_color", model.conv3.filters, false);
+    }
+
+    cout << "\nVisualisation terminée. Images sauvegardées." << endl;
+    cv::waitKey(0);
+}
 
 double calculate_accuracy(const MatrixXd &predictions, const VectorXd &true_labels)
 {
@@ -308,6 +337,9 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y)
             dump_metrics(this->params.iterations, loss, accuracy);
         }
     }
+
+    cout << "Visualize " << std::endl;
+    visualizeFilters(*this, true);
 }
 
 void CNNModel::evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y, vector<string> &classes)

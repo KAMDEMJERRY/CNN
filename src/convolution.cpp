@@ -91,8 +91,8 @@ void ConvLayer::forward(const std::vector<std::vector<MatrixXd>> &batch_input_ma
             output_maps_i[oc] = MatrixXd::Zero(output_size, output_size);
         }
 
-        std::cout << "\nFrom convforward: input maps for sample i (" << (input_maps_i.size()) << ")\n";
-        std::cout << "\nFrom convforward: Conv inputchannel (" << (input_ch) << ")\n";
+        // std::cout << "\nFrom convforward: input maps for sample i (" << (input_maps_i.size()) << ")\n";
+        // std::cout << "\nFrom convforward: Conv inputchannel (" << (input_ch) << ")\n";
 
         if (input_maps_i.size() != input_ch)
         {

@@ -31,6 +31,7 @@ extern vector<String> class_path;
 class ImageDatasetLoader {
 private:
     string dataset_path;
+    int bound_per_class = 0; // Limite le nombre d'images par classe (0 = pas de limite)
     vector<vector<MatrixXd>> images;
     vector<string> classes;// Déclaration des fonctions externes
     vector<string> labels;// Déclaration des fonctions externes
@@ -41,7 +42,10 @@ private:
 public:
 
     // Constructeur
-    ImageDatasetLoader(string dataset_path, int img_size ,string color_mode = "RGB");
+    ImageDatasetLoader(string dataset_path, int img_size ,string color_mode = "RGB", int bound_per_class = 0)
+        : dataset_path(dataset_path), color_mode(color_mode), bound_per_class(bound_per_class) {
+        loadDataset(img_size, img_size);
+    }
     ImageDatasetLoader()= default;
  
     // Méthodes
@@ -89,7 +93,8 @@ public:
     ImageDataset(
         string dataset_path,
         int img_size,
-        string color_mode = "GRAY"
+        string color_mode = "GRAY",
+        int bound_per_class = 0
     );
     std::vector<std::vector<MatrixXd>> normalize();
     ImageDataset() = default;
