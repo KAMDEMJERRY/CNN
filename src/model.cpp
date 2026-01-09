@@ -72,7 +72,7 @@ CNNModel::CNNModel(CNNParameters &params)
       conv1_activation(), conv2_activation(), conv3_activation(),
       activation1(), activation2(),
       loss_activation(),
-      optimizer(params.learning_rate, params.decay, params.momentum), train(metrics_file, std::ios::app), test(metrics_file1, std::ios::app)
+      optimizer(params.learning_rate, params.decay, params.momentum)
 
 {
     decay = params.decay;
@@ -212,7 +212,7 @@ void CNNModel::compile()
 }
 
 void CNNModel::fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y)
-{
+{   
 
     cout << "Taille d'entrée: " << inputs[0][0].rows() << "x" << inputs[0][0].cols() << endl;
 
