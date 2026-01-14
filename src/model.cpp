@@ -1,10 +1,39 @@
 #include "model.hpp"
 #include "model_repo.hpp"
+#include "utils.hpp"
 
 // #include <filesystem>
 // #include <iostream>
 
 namespace fs = std::filesystem;
+
+// Cette fonction sauvegarde dans un fichier une images des filtres de convolutions
+void visualizeFilters(CNNModel &model, bool use_grayscale)
+{
+    cout << "========================================" << endl;
+    cout << "VISUALISATION DES FILTRES CNN" << endl;
+    cout << "========================================" << endl;
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    std::string timeStamp = std::ctime(&now_time) + string("  ");
+    // Visualisation en niveau de gris
+    showFilterEnhanced(string(timeStamp), " convlayer 1", model.conv1.filters, use_grayscale);
+    showFilterEnhanced(string(timeStamp), " convlayer 2", model.conv2.filters, use_grayscale);
+    showFilterEnhanced(string(timeStamp), " convlayer 3", model.conv3.filters, use_grayscale);
+
+    // Vous pouvez aussi visualiser en couleur ET en niveau de gris
+    if (use_grayscale)
+    {
+        // Afficher aussi en couleur pour comparaison
+        showFilterEnhanced(string(timeStamp), " convlayer 1_color", model.conv1.filters, false);
+        showFilterEnhanced(string(timeStamp), " convlayer 2_color", model.conv2.filters, false);
+        showFilterEnhanced(string(timeStamp), " convlayer 3_color", model.conv3.filters, false);
+    }
+
+    cout << "\nVisualisation terminée. Images sauvegardées." << endl;
+    cv::waitKey(0);
+}
 
 double calculate_accuracy(const MatrixXd &predictions, const VectorXd &true_labels)
 {
@@ -43,7 +72,7 @@ CNNModel::CNNModel(CNNParameters &params)
       conv1_activation(), conv2_activation(), conv3_activation(),
       activation1(), activation2(),
       loss_activation(),
-      optimizer(params.learning_rate, params.decay, params.momentum), train(metrics_file, std::ios::app), test(metrics_file1, std::ios::app)
+      optimizer(params.learning_rate, params.decay, params.momentum)
 
 {
     decay = params.decay;
@@ -103,6 +132,9 @@ void CNNModel::sethyperparams(CNNParameters &params)
 
 void CNNModel::compile()
 {
+    // 1. Initialisez la graine une seule fois au début du programme
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
     conv1 = ConvLayer(params.conv1_inputsize,            // conv1.inputsize
                       params.conv1_input_channel_number, // conv1_number of channel of an input
                       params.conv1_filter_number,        // conv1.number of filter
@@ -181,6 +213,7 @@ void CNNModel::compile()
     epochs = params.epochs;
     checkpoint = params.checkpoint;
 }
+
 
 void CNNModel::fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y)
 {
@@ -308,6 +341,9 @@ void CNNModel::fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y)
             dump_metrics(this->params.iterations, loss, accuracy);
         }
     }
+
+    cout << "Visualize " << std::endl;
+    visualizeFilters(*this, true);
 }
 
 void CNNModel::evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y, vector<string> &classes)
@@ -334,7 +370,6 @@ void CNNModel::evaluate(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &Y,
     dense2.forward(activation1.output);
     activation2.forward(dense2.output);
     dense3.forward(activation2.output);
-
 
     // Apply softmax manually to get probabilities
     MatrixXd logits = dense3.output;
@@ -407,6 +442,7 @@ Eigen::MatrixXd CNNModel::predict(std::vector<std::vector<MatrixXd>> &inputs)
 
     return dense3.output;
 }
+
 
 void CNNModel::dump(const std::string &filename)
 {

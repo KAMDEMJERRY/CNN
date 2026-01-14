@@ -14,20 +14,26 @@ using namespace Eigen;
 // #define  BASE_DATA_PATH  "../../../dataset/bloodcellsub1/images/TRAIN/"
 // #define  BASE_DATA_PATH  "../../../dataset/mnist_img/trainingSet/trainingSet"
 #define BASE_DATA_PATH "../../../dataset/mnist_img/trainingSample/trainingSample"
-
+#define TEST_DATA_PATH "../../../dataset/mnist_img/trainingSet/trainingSet"
 int main(int argc, char *argv[])
 {
     try
+    
+    
     {
 
         cout << "=== CHARGEMENT DU DATASET ===" << endl;
         ImageDataset imgDataset(BASE_DATA_PATH, 28, "GRAY"); // RGB or GRAY
-        imgDataset.split = 0.8;                              // 80% pour l'entraînement, 20% pour le test
+        ImageDataset imgDatasetEval(TEST_DATA_PATH, 28, "GRAY", 50); // RGB or GRAY
+        
+        imgDataset.split = 1; 
+        imgDatasetEval.split = 0; 
+
         std::vector<std::vector<MatrixXd>> inputs_train = imgDataset.getTrain().first;
-        std::vector<std::vector<MatrixXd>> inputs_test = imgDataset.getTest().first;
+        std::vector<std::vector<MatrixXd>> inputs_test = imgDatasetEval.getTest().first;
         VectorXd y_train = (imgDataset.getTrain().second).cast<double>();
-        VectorXd y_test = (imgDataset.getTest().second).cast<double>();
-        int image_size = imgDataset.image_size;   // Les images sont carrées (128x128)
+        VectorXd y_test = (imgDatasetEval.getTest().second).cast<double>();
+        int image_size = imgDataset.image_size; // Les images sont carrées (128x128)
         int input_channels = imgDataset.channels; // Images en niveaux de RGB(3) ou de gris (1)
 
         // Vérifier que des images ont été chargées
@@ -38,9 +44,8 @@ int main(int argc, char *argv[])
         imgDataset.summary();
 
         // Définir les paramètres du modèle CNN
-
         CNNParameters params;
-        params.epochs = 1;
+        params.epochs = 100;
         params.learning_rate = 0.01;
         params.decay = 1e-5;
         params.momentum = 0.9;
@@ -66,16 +71,15 @@ int main(int argc, char *argv[])
         params.pool1_size = 2;
 
         // Configuration Conv2 (corrigé: input_channel_number devrait être 8, pas input_channels)
-        params.conv2_filter_number = 8; // 16 filtres comme défini dans conv2
-        params.conv2_filter_size = 3;
+        params.conv2_filter_number = 5; // 16 filtres comme défini dans conv2
+        params.conv2_filter_size = 5;
         params.conv2_padding = 1;
         params.conv2_stride = 1;
         params.pool2_size = 2;
 
         // Configuration Conv3 (si vous l'utilisez plus tard, sinon vous pouvez supprimer)
-
-        params.conv3_filter_number = 8; // 32;
-        params.conv3_filter_size = 3;
+        params.conv3_filter_number = 5; // 32;
+        params.conv3_filter_size = 4;
         params.conv3_padding = 1;
         params.conv3_stride = 1;
 
@@ -115,6 +119,7 @@ int main(int argc, char *argv[])
             std::cout << "Model loaded from: " << filepath << std::endl;
 
             {
+                cnn_model->epochs = params.epochs;
                 // Dans votre main(), APRÈS le chargement
                 std::cout << "\n=== DIAGNOSTIC DES DIMENSIONS ===" << std::endl;
                 std::cout << "conv1.input_size: " << cnn_model->conv1.input_size << std::endl;

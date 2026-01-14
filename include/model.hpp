@@ -6,6 +6,8 @@
 #include "omp.hpp"
 #include <fstream>
 
+#define metrics_file  "/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/train.txt"
+#define metrics_file1  "/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/eval.txt"
 class CNNParameters
 {
 public:
@@ -113,8 +115,8 @@ public:
     double c_bias_regularizer_l1 = 0;
     double c_bias_regularizer_l2 = 0;
 
-    std::ofstream train;
-    std::ofstream test;
+    std::ofstream train = std::ofstream(metrics_file, std::ios::app);
+    std::ofstream test = std::ofstream(metrics_file1, std::ios::app);
 
     CNNModel(CNNParameters &params);
     CNNModel() : conv1(), conv2(), conv3(), // You'll need to add default constructors to your layer classes
@@ -122,8 +124,7 @@ public:
                  dense1(), dense2(), dense3(),
                  conv1_activation(), conv2_activation(), conv3_activation(),
                  activation1(), activation2(),
-                 loss_activation(){}
-    ;
+                 loss_activation() {};
     ~CNNModel() = default;
     void sethyperparams(CNNParameters &params);
     void compile();
@@ -142,6 +143,4 @@ public:
     // auto update();
 };
 
-inline std::string metrics_file = R"(/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/train.txt)";
-inline std::string metrics_file1 = R"(/home/ndomboukamdem/Documents/INFL/Master 2/Code/log/eval.txt)";
 #endif // MODEL
