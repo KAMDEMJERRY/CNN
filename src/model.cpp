@@ -16,7 +16,7 @@ void visualizeFilters(CNNModel &model, bool use_grayscale)
 
     auto now = std::chrono::system_clock::now();
     std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-    std::string timeStamp =  std::ctime(&now_time) + string("  ");
+    std::string timeStamp = std::ctime(&now_time) + string("  ");
     // Visualisation en niveau de gris
     showFilterEnhanced(string(timeStamp), " convlayer 1", model.conv1.filters, use_grayscale);
     showFilterEnhanced(string(timeStamp), " convlayer 2", model.conv2.filters, use_grayscale);
@@ -132,6 +132,9 @@ void CNNModel::sethyperparams(CNNParameters &params)
 
 void CNNModel::compile()
 {
+    // 1. Initialisez la graine une seule fois au début du programme
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
     conv1 = ConvLayer(params.conv1_inputsize,            // conv1.inputsize
                       params.conv1_input_channel_number, // conv1_number of channel of an input
                       params.conv1_filter_number,        // conv1.number of filter
@@ -211,8 +214,9 @@ void CNNModel::compile()
     checkpoint = params.checkpoint;
 }
 
+
 void CNNModel::fit(std::vector<std::vector<MatrixXd>> &inputs, VectorXd &y)
-{   
+{
 
     cout << "Taille d'entrée: " << inputs[0][0].rows() << "x" << inputs[0][0].cols() << endl;
 
@@ -438,6 +442,7 @@ Eigen::MatrixXd CNNModel::predict(std::vector<std::vector<MatrixXd>> &inputs)
 
     return dense3.output;
 }
+
 
 void CNNModel::dump(const std::string &filename)
 {

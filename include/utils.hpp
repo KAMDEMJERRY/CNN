@@ -25,6 +25,7 @@
 
 using namespace std;
 using namespace Eigen;
+
 MatrixXd one_hot(const VectorXd &y, int num_labels = 0);
 void logCNNArchitecture(const ImageDataset &imgDataset,
                         const ConvLayer &conv1, const PoolLayer &pool1,
@@ -39,5 +40,8 @@ void showFilter(const string &layer_name,
                 int cell_size,
                 int padding);
 void showFilterIndividualOutputs(const string &layer_name, const vector<vector<MatrixXd>> &filters, int cell_size);
-void showFilterEnhanced(const string &timeStamp, const string &layer_name, const vector<vector<MatrixXd>> &filters, bool use_grayscale, int colormap_type = cv::COLORMAP_JET, bool normalize_per_filter = true, bool show_values = false , int cell_size = 50, int padding = 3);
+
+void showFilterEnhanced(const string &timeStamp, const string &layer_name, const vector<vector<MatrixXd>> &filters, bool use_grayscale = false, int colormap_type = cv::COLORMAP_VIRIDIS, bool normalize_per_filter = false, bool show_values = false, int cell_size = 50, int padding = 2, bool interpolate = false) ;
+// void showFilterEnhanced(const string &timeStamp, const string &layer_name, const vector<vector<MatrixXd>> &filters, bool use_grayscale, int colormap_type = cv::COLORMAP_VIRIDIS, bool normalize_per_filter = false, bool show_values = false, int cell_size = 50, int padding = 5);
+void createTraditionalView(const string &timeStamp, const string &layer_name, const vector<vector<MatrixXd>> &filters, bool use_grayscale, int cell_size, int padding, double global_min, double global_max);
 #endif

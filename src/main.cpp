@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
         // Définir les paramètres du modèle CNN
         CNNParameters params;
-        params.epochs = 10;
+        params.epochs = 100;
         params.learning_rate = 0.01;
         params.decay = 1e-5;
         params.momentum = 0.9;

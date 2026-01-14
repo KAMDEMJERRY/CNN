@@ -96,7 +96,7 @@ public:
         string color_mode = "GRAY",
         int bound_per_class = 0
     );
-    std::vector<std::vector<MatrixXd>> normalize();
+    std::vector<std::vector<MatrixXd>>& normalize();
     ImageDataset() = default;
 
     // Méthodes
