@@ -7,7 +7,7 @@
 *.so
 *.dylib
 *.class
-*.txt
+# *.txt
 
 build/*
 *.pdf
